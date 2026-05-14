@@ -201,7 +201,7 @@
       <div class="card" style="margin-top:16px">
         <h2>日別グラフ</h2>
         <div class="chartBox" id="chartBox"></div>
-        <div class="legend"><span><span class="dot" style="background:#2563eb"></span>日別差枚</span><span><span class="dot" style="background:#16a34a"></span>累計差枚</span></div>
+        <div class="legend"><span><span class="dot" style="background:#2563eb"></span>日別差枚（折れ線）</span><span><span class="dot" style="background:#16a34a"></span>累計差枚（折れ線）</span></div>
       </div>
     </section>
 
@@ -439,18 +439,18 @@
       const min=Math.min(...all), max=Math.max(...all); const span=Math.max(1,max-min);
       const y=v=>h-pad-((v-min)/span)*(h-pad*2);
       const x=i=>pad+i*((w-pad*2)/Math.max(1,dates.length-1));
-      const bars=vals.map((v,i)=>{
-        const x0=x(i)-13, y0=Math.min(y(0),y(v.diff)), bh=Math.abs(y(v.diff)-y(0));
-        return `<rect x="${x0}" y="${y0}" width="26" height="${Math.max(2,bh)}" rx="5" fill="#2563eb" opacity=".82"></rect>`;
-      }).join('');
-      const line=vals.map((v,i)=>`${i?'L':'M'}${x(i)},${y(v.cum)}`).join(' ');
+      const diffLine=vals.map((v,i)=>`${i?'L':'M'}${x(i)},${y(v.diff)}`).join(' ');
+      const cumLine=vals.map((v,i)=>`${i?'L':'M'}${x(i)},${y(v.cum)}`).join(' ');
       const labels=vals.map((v,i)=>`<text x="${x(i)}" y="${h-12}" text-anchor="middle" font-size="10" fill="#64748b">${v.date.slice(5).replace('-','/')}</text>`).join('');
-      const points=vals.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v.cum)}" r="4" fill="#16a34a"></circle>`).join('');
-      document.getElementById('chartBox').innerHTML=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="日別差枚と累計差枚グラフ">
+      const diffPoints=vals.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v.diff)}" r="4" fill="#2563eb"><title>${v.date} 日別 ${fmt(v.diff)}枚</title></circle>`).join('');
+      const cumPoints=vals.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v.cum)}" r="4" fill="#16a34a"><title>${v.date} 累計 ${fmt(v.cum)}枚</title></circle>`).join('');
+      document.getElementById('chartBox').innerHTML=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="日別差枚と累計差枚の折れ線グラフ">
         <line x1="${pad}" y1="${y(0)}" x2="${w-pad}" y2="${y(0)}" stroke="#94a3b8" stroke-dasharray="4 4"></line>
         <text x="8" y="${y(max)+4}" font-size="11" fill="#64748b">${fmt(max)}</text>
         <text x="8" y="${y(min)+4}" font-size="11" fill="#64748b">${fmt(min)}</text>
-        ${bars}<path d="${line}" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>${points}${labels}
+        <path d="${diffLine}" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path d="${cumLine}" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+        ${diffPoints}${cumPoints}${labels}
       </svg>`;
     }
     function renderHistory(){
