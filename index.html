@@ -201,7 +201,7 @@
       <div class="card" style="margin-top:16px">
         <h2>日別グラフ</h2>
         <div class="chartBox" id="chartBox"></div>
-        <div class="legend"><span><span class="dot" style="background:#2563eb"></span>日別差枚（折れ線）</span><span><span class="dot" style="background:#16a34a"></span>累計差枚（折れ線）</span><span><span class="dot" style="background:#f59e0b"></span>102%ライン</span></div>
+        <div class="legend"><span><span class="dot" style="background:#2563eb"></span>区間差枚（折れ線）</span><span><span class="dot" style="background:#16a34a"></span>累計差枚（折れ線）</span><span><span class="dot" style="background:#f59e0b"></span>102%ライン</span><span>横軸：累計回転数</span></div>
       </div>
     </section>
 
@@ -428,45 +428,43 @@
       document.getElementById('adviceBox').textContent=msg;
     }
     function renderChart(){
-      const list=[...filteredRecords()].sort((a,b)=>a.date.localeCompare(b.date));
-      const byDate={};
-      list.forEach(r=>{
-        if(!byDate[r.date]) byDate[r.date]={diff:0,games:0};
-        byDate[r.date].diff += calcDiff(r);
-        byDate[r.date].games += calcGames(r);
-      });
-      const dates=Object.keys(byDate).sort();
-      const w=Math.max(760,dates.length*58+80), h=320, pad=42;
-      if(!dates.length){document.getElementById('chartBox').innerHTML='<div class="mini">グラフ表示できる記録がありません。</div>';return;}
+      const list=[...filteredRecords()].sort((a,b)=>(a.date||'').localeCompare(b.date||'') || (Number(a.startGame)||0)-(Number(b.startGame)||0));
+      const vals=[];
       let cum=0;
       let cumGames=0;
-      const vals=dates.map(d=>{
-        cum += byDate[d].diff;
-        cumGames += byDate[d].games;
+      list.forEach(r=>{
+        const g=calcGames(r);
+        if(g<=0)return;
+        cum += calcDiff(r);
+        cumGames += g;
         const expected = Math.round(cumGames * 3 * 0.02);
-        return {date:d,diff:byDate[d].diff,cum,games:byDate[d].games,cumGames,expected};
+        vals.push({date:r.date,diff:calcDiff(r),cum,games:g,cumGames,expected,shop:r.shop,machine:r.machine});
       });
-      const totalExpected = vals.length ? vals[vals.length-1].expected : 0;
-      const diagonalExpected = vals.map((v,i)=>{
-        if(vals.length===1) return totalExpected;
-        return Math.round(totalExpected * (i/(vals.length-1)));
-      });
-      const all=vals.flatMap((v,i)=>[v.diff,v.cum,diagonalExpected[i],0]);
+      const w=Math.max(760,vals.length*64+100), h=320, pad=46;
+      if(!vals.length){document.getElementById('chartBox').innerHTML='<div class="mini">グラフ表示できる記録がありません。総ゲーム数または開始G・終了Gを入力してください。</div>';return;}
+      const all=vals.flatMap(v=>[v.diff,v.cum,v.expected,0]);
       const min=Math.min(...all), max=Math.max(...all); const span=Math.max(1,max-min);
+      const maxGame=Math.max(1,vals[vals.length-1].cumGames);
       const y=v=>h-pad-((v-min)/span)*(h-pad*2);
-      const x=i=>pad+i*((w-pad*2)/Math.max(1,dates.length-1));
+      const xByGame=g=>pad+(g/maxGame)*(w-pad*2);
+      const x=i=>xByGame(vals[i].cumGames);
       const diffLine=vals.map((v,i)=>`${i?'L':'M'}${x(i)},${y(v.diff)}`).join(' ');
       const cumLine=vals.map((v,i)=>`${i?'L':'M'}${x(i)},${y(v.cum)}`).join(' ');
-      const expectedLine=diagonalExpected.map((v,i)=>`${i?'L':'M'}${x(i)},${y(v)}`).join(' ');
-      const labels=vals.map((v,i)=>`<text x="${x(i)}" y="${h-12}" text-anchor="middle" font-size="10" fill="#64748b">${v.date.slice(5).replace('-','/')}</text>`).join('');
-      const diffPoints=vals.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v.diff)}" r="4" fill="#2563eb"><title>${v.date} 日別 ${fmt(v.diff)}枚</title></circle>`).join('');
-      const cumPoints=vals.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v.cum)}" r="4" fill="#16a34a"><title>${v.date} 累計 ${fmt(v.cum)}枚</title></circle>`).join('');
-      const expectedLabelX = vals.length===1 ? x(0) : x(vals.length-1);
-      const expectedLabelY = vals.length===1 ? y(diagonalExpected[0]) : y(diagonalExpected[vals.length-1]);
-      document.getElementById('chartBox').innerHTML=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="日別差枚と累計差枚と102%ラインの折れ線グラフ">
+      const expectedLine=`M${pad},${y(0)} L${xByGame(maxGame)},${y(Math.round(maxGame*3*0.02))}`;
+      const labelStep=Math.max(1,Math.ceil(vals.length/8));
+      const labels=vals.map((v,i)=>{
+        if(i!==0 && i!==vals.length-1 && i%labelStep!==0)return '';
+        return `<text x="${x(i)}" y="${h-12}" text-anchor="middle" font-size="10" fill="#64748b">${fmt(v.cumGames)}G</text>`;
+      }).join('');
+      const diffPoints=vals.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v.diff)}" r="4" fill="#2563eb"><title>${v.date} 区間 ${fmt(v.games)}G / 差枚 ${fmt(v.diff)}枚</title></circle>`).join('');
+      const cumPoints=vals.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v.cum)}" r="4" fill="#16a34a"><title>${v.date} 累計 ${fmt(v.cumGames)}G / 累計 ${fmt(v.cum)}枚</title></circle>`).join('');
+      const expectedLabelX = xByGame(maxGame);
+      const expectedLabelY = y(Math.round(maxGame*3*0.02));
+      document.getElementById('chartBox').innerHTML=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="累計回転数ごとの差枚と102%ラインの折れ線グラフ">
         <line x1="${pad}" y1="${y(0)}" x2="${w-pad}" y2="${y(0)}" stroke="#94a3b8" stroke-dasharray="4 4"></line>
         <text x="8" y="${y(max)+4}" font-size="11" fill="#64748b">${fmt(max)}</text>
         <text x="8" y="${y(min)+4}" font-size="11" fill="#64748b">${fmt(min)}</text>
+        <text x="${w-pad}" y="${h-30}" text-anchor="end" font-size="11" fill="#64748b">累計回転数</text>
         <path d="${expectedLine}" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="8 6" stroke-linecap="round" stroke-linejoin="round"></path>
         <path d="${diffLine}" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
         <path d="${cumLine}" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
