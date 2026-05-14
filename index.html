@@ -418,7 +418,7 @@ tfoot td{
 .appPage.active{display:block}
 .hitPageTop{
   display:grid;
-  grid-template-columns:1fr 1fr 1fr;
+  grid-template-columns:1fr 1fr 1fr 1fr;
   gap:12px;
   align-items:end;
 }
@@ -547,7 +547,7 @@ tfoot td{
   <div class="header">
     <div>
       <h1>新ハナビ 収支フォーム</h1>
-      <div class="sub">入力→日別表→月間集計→差枚グラフ。BIG/REG別の当たり回転数は専用ページで管理できます。</div>
+      <div class="sub">入力→日別表→月間集計→差枚グラフ。BIG/REG別の当たり回転数は専用ページだけで管理できます。</div>
     </div>
     <div class="monthBox">
       <input type="month" id="monthPicker" onchange="setMonthFromPicker()" style="width:160px">
@@ -569,7 +569,7 @@ tfoot td{
     <div class="formGrid">
       <div class="wide2">
         <label>日付</label>
-        <input type="date" id="date">
+        <input type="date" id="date" onchange="renderHitChips();updatePreview()">
       </div>
       <div>
         <label>持ちメダル投資（枚）</label>
@@ -623,20 +623,18 @@ tfoot td{
       <div>欠損合計：<span class="val minus" id="pvTotalLoss">0</span></div>
       <div>ミスなし差枚：<span class="val" id="pvNoMissDiff">0</span></div>
       <div>102%目安：<span class="val plus" id="pvExpected">0</span></div>
-      <div>当たり入力：<span class="val" id="pvHits">0回</span></div>
+      <div></div>
     </div>
 
     <div class="hitArea">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <div>
           <label>当たり回転数</label>
-          <div class="smallNote">当たり回転数の入力・一覧・分析は、専用ページに分けました。</div>
-          <div class="hitSummaryLine">
-            <span class="hitCountBadge">BIG：<span id="hitBigCount">0</span>回</span>
-            <span class="hitCountBadge">REG：<span id="hitRegCount">0</span>回</span>
-            <span class="hitCountBadge">合計：<span id="hitTotalCount">0</span>回</span>
-          </div>
+          <div class="smallNote">当たり回転数は収支表とは分けて、専用ページで入力・確認します。</div>
         </div>
+        <button type="button" class="black" onclick="showPage('hitPage')">当たり回転数ページへ</button>
+      </div>
+    </div>
         <button type="button" class="black" onclick="showPage('hitPage')">当たり回転数ページへ</button>
       </div>
     </div>
@@ -648,6 +646,9 @@ tfoot td{
     </div>
   </section>
 
+  <div class="actions noPrint" style="margin:8px 0 10px">
+    <button id="deleteCheckedTopBtn" class="red" onclick="deleteSelected()">チェックした行を削除</button>
+  </div>
   <div class="tableWrap">
     <table>
       <thead>
@@ -671,7 +672,7 @@ tfoot td{
           <th>欠損合計</th>
           <th>ミスなし差枚</th>
           <th>現金投資（円）</th>
-          <th>当たり</th>
+          
           <th>操作</th>
         </tr>
       </thead>
@@ -762,7 +763,8 @@ tfoot td{
       <label class="fileBtn">JSON読み込み<input class="hidden" type="file" accept="application/json" onchange="restoreJSON(event)"></label>
       <button onclick="exportRawMonth()">今月の生データ出力</button>
       <button onclick="backupAll()">全期間をバックアップ(JSON)</button>
-      <button class="red" onclick="deleteSelected()">選択行を削除</button>
+      <button class="red" onclick="deleteSelected()">チェックした行を削除</button>
+      <button class="red" onclick="deleteAllData()">全データ削除</button>
       <label style="display:flex;align-items:center;gap:6px;margin-left:auto">
         <input type="checkbox" id="replaceMode" style="width:auto;min-height:auto">置換モード（この月を書き替え）
       </label>
@@ -775,7 +777,7 @@ tfoot td{
       <div class="graphHead">
         <div>
           <h2 style="margin:0 0 6px">当たり回転数ページ</h2>
-          <div class="sub">プレイ中のBIG/REG当たり回転数は、ここで入力・編集できます。入力した内容は収支ページの保存データに一緒に入ります。</div>
+          <div class="sub">プレイ中のBIG/REG当たり回転数は、ここで入力・編集できます。収支ページとは別データとして保存されます。</div>
         </div>
         <button onclick="showPage('mainPage')">収支ページへ戻る</button>
       </div>
@@ -789,6 +791,10 @@ tfoot td{
           <div>
             <label>当たった回転数</label>
             <input type="number" id="hitGame" placeholder="例：87" onkeydown="if(event.key==='Enter'){event.preventDefault();addHit('big')}">
+          </div>
+          <div>
+            <label>メモ（任意）</label>
+            <input id="hitMemo" placeholder="例：527番台、朝一など">
           </div>
           <div class="actions" style="margin-top:0">
             <button class="blue" onclick="addHit('big')">BIG追加</button>
@@ -813,7 +819,7 @@ tfoot td{
         </div>
 
         <div class="chips" id="hitChips"></div>
-        <div class="smallNote">当たり回転数が多くなっても、このページ内で確認できます。入力中の回転数は「編集」から修正できます。</div>
+        <div class="smallNote">当たり回転数が多くなっても、このページ内で日付ごとに確認できます。収支データとは別保存です。</div>
       </div>
     </section>
 
@@ -859,10 +865,11 @@ tfoot td{
 
 <script>
 const KEY='hanabi_form_v3_records';
+const HITKEY='hanabi_form_v3_hit_records';
 const SETKEY='hanabi_form_v3_settings';
 let records=[];
+let hitRecords=[];
 let editId='';
-let currentHits={big:[],reg:[]};
 let currentMonth='';
 let graphMode='month';
 let settings={rate:46};
@@ -877,18 +884,16 @@ function showPage(pageId){
   if(btn)btn.classList.add('active');
   if(pageId==='hitPage'){
     const hitDate=document.getElementById('hitPageDate');
-    if(hitDate)hitDate.value=document.getElementById('date').value||today();
+    if(hitDate && !hitDate.value)hitDate.value=today();
     renderHitChips();
     renderHitAnalysis();
     setTimeout(()=>window.scrollTo({top:0,behavior:'smooth'}),30);
   }
 }
 function syncHitPageDateToMain(){
-  const hitDate=document.getElementById('hitPageDate');
-  if(hitDate && hitDate.value){
-    document.getElementById('date').value=hitDate.value;
-    updatePreview();
-  }
+  renderHitChips();
+  renderHitAnalysis();
+  updatePreview();
 }
 
 function today(){
@@ -939,11 +944,13 @@ function cls(n){
 }
 function load(){
   records=JSON.parse(localStorage.getItem(KEY)||'[]');
+  hitRecords=JSON.parse(localStorage.getItem(HITKEY)||'[]');
   settings={...settings,...JSON.parse(localStorage.getItem(SETKEY)||'{}')};
   const rateEl=document.getElementById('rateInput');
   if(rateEl)rateEl.value=settings.rate||46;
   const d=today();
   document.getElementById('date').value=d;
+  const hitDate=document.getElementById('hitPageDate'); if(hitDate)hitDate.value=d;
   currentMonth=ymFromDate(d);
   document.getElementById('monthPicker').value=currentMonth;
   updatePreview();
@@ -951,6 +958,7 @@ function load(){
   showPage('mainPage');
 }
 function saveLocal(){localStorage.setItem(KEY,JSON.stringify(records))}
+function saveHitLocal(){localStorage.setItem(HITKEY,JSON.stringify(hitRecords))}
 function toast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg;
@@ -981,7 +989,6 @@ function updatePreview(){
   setText('pvNoMissDiff',fmtSigned(noMissDiffOf(r)));
   document.getElementById('pvNoMissDiff').className='val '+cls(noMissDiffOf(r));
   setText('pvExpected',fmt(Math.round(g*3*0.02)));
-  setText('pvHits',fmt(currentHits.big.length+currentHits.reg.length)+'回');
 }
 function setText(id,v){document.getElementById(id).textContent=v}
 function setClass(id,c){document.getElementById(id).className='val '+c}
@@ -998,7 +1005,6 @@ function collect(withId=true){
     iceMiss:Number(document.getElementById('iceMiss').value)||0,
     satsume:Number(document.getElementById('satsume').value)||0,
     memo:document.getElementById('memo').value.trim(),
-    hits:{big:[...currentHits.big],reg:[...currentHits.reg]},
     createdAt:new Date().toISOString()
   }
 }
@@ -1023,7 +1029,6 @@ function resetForm(){
   const hitDate=document.getElementById('hitPageDate'); if(hitDate)hitDate.value=today();
   ['invest','returnMedals','games','big','reg','regMiss','iceMiss','satsume'].forEach(id=>document.getElementById(id).value=0);
   document.getElementById('memo').value='';
-  currentHits={big:[],reg:[]};
   renderHitChips();
   updatePreview();
 }
@@ -1042,7 +1047,6 @@ function editRecord(id){
   document.getElementById('iceMiss').value=r.iceMiss||0;
   document.getElementById('satsume').value=r.satsume||0;
   document.getElementById('memo').value=r.memo||'';
-  currentHits=normalizeHits(r.hits);
   renderHitChips();
   updatePreview();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -1061,6 +1065,18 @@ function normalizeHits(hits){
     reg:Array.isArray(hits?.reg)?[...hits.reg]:[]
   };
 }
+function hitCountByDate(date){
+  return hitRecords.filter(h=>h.date===date).length;
+}
+function hitCountForRecordList(list){
+  const dates=new Set(list.map(r=>r.date));
+  return hitRecords.filter(h=>dates.has(h.date)).length;
+}
+function hitsForDate(date){
+  return hitRecords
+    .filter(h=>h.date===date)
+    .sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||'') || (Number(a.game)||0)-(Number(b.game)||0));
+}
 function setHit(v){
   document.getElementById('hitGame').value=v;
   document.getElementById('hitGame').focus();
@@ -1070,58 +1086,84 @@ function addHit(type){
   const v=Number(el.value)||0;
   if(v<=0){alert('当たった回転数を入力してください。');return}
   if(type!=='big'&&type!=='reg')type='big';
-  syncHitPageDateToMain();
-  currentHits[type].push(v);
-  if(type==='big')document.getElementById('big').value=(Number(document.getElementById('big').value)||0)+1;
-  if(type==='reg')document.getElementById('reg').value=(Number(document.getElementById('reg').value)||0)+1;
+
+  const date=document.getElementById('hitPageDate')?.value || today();
+  const memo=document.getElementById('hitMemo')?.value.trim() || '';
+  hitRecords.push({
+    id:'hit-'+Date.now()+'-'+Math.random().toString(16).slice(2),
+    date,
+    type,
+    game:v,
+    memo,
+    createdAt:new Date().toISOString()
+  });
+  saveHitLocal();
   el.value='';
   renderHitChips();
+  renderHitAnalysis();
   updatePreview();
+  toast(`${type==='big'?'BIG':'REG'} ${fmt(v)}G を保存しました`);
 }
-function removeHit(type,i){
-  if(type!=='big'&&type!=='reg')return;
-  currentHits[type].splice(i,1);
-  if(type==='big')document.getElementById('big').value=Math.max(0,(Number(document.getElementById('big').value)||0)-1);
-  if(type==='reg')document.getElementById('reg').value=Math.max(0,(Number(document.getElementById('reg').value)||0)-1);
+function deleteHitRecord(id){
+  if(!confirm('この当たり回転数を削除しますか？'))return;
+  hitRecords=hitRecords.filter(h=>h.id!==id);
+  saveHitLocal();
   renderHitChips();
+  renderHitAnalysis();
   updatePreview();
+  toast('当たり回転数を削除しました');
 }
-
-function editHit(type,i){
-  if(type!=='big'&&type!=='reg')return;
-  const oldVal=currentHits[type][i];
-  const input=prompt(`${type==='big'?'BIG':'REG'}の当たり回転数を編集`, oldVal);
+function editHitRecord(id){
+  const h=hitRecords.find(x=>x.id===id);
+  if(!h)return;
+  const input=prompt(`${h.type==='big'?'BIG':'REG'}の当たり回転数を編集`, h.game);
   if(input===null)return;
   const v=Number(input);
   if(!v || v<=0){alert('1以上の回転数を入力してください。');return;}
-  currentHits[type][i]=v;
+  h.game=v;
+  h.updatedAt=new Date().toISOString();
+  saveHitLocal();
   renderHitChips();
+  renderHitAnalysis();
   updatePreview();
+  toast('当たり回転数を編集しました');
 }
-
 function clearHits(){
-  if((currentHits.big.length+currentHits.reg.length)&&!confirm('当たり回転数を消しますか？'))return;
-  currentHits={big:[],reg:[]};
-  document.getElementById('big').value=0;
-  document.getElementById('reg').value=0;
+  const date=document.getElementById('hitPageDate')?.value || today();
+  const count=hitRecords.filter(h=>h.date===date).length;
+  if(!count){alert('この日の当たり回転数はありません。');return;}
+  if(!confirm(`${date} の当たり回転数 ${count}件を削除しますか？`))return;
+  hitRecords=hitRecords.filter(h=>h.date!==date);
+  saveHitLocal();
   renderHitChips();
+  renderHitAnalysis();
   updatePreview();
+  toast('この日の当たり回転数を削除しました');
 }
 function renderHitChips(){
-  const chips=[
-    ...currentHits.big.map((v,i)=>`<span class="chip big">BIG ${fmt(v)}G <button class="chipEdit" onclick="editHit('big',${i})">編集</button> <button onclick="removeHit('big',${i})">×</button></span>`),
-    ...currentHits.reg.map((v,i)=>`<span class="chip reg">REG ${fmt(v)}G <button class="chipEdit" onclick="editHit('reg',${i})">編集</button> <button onclick="removeHit('reg',${i})">×</button></span>`)
-  ];
+  const pageDate=document.getElementById('hitPageDate')?.value || today();
+  const pageHits=hitsForDate(pageDate);
+  const chips=pageHits.map(h=>`<span class="chip ${h.type==='big'?'big':'reg'}">${h.type==='big'?'BIG':'REG'} ${fmt(h.game)}G <button class="chipEdit" onclick="editHitRecord('${h.id}')">編集</button> <button onclick="deleteHitRecord('${h.id}')">×</button></span>`);
   const chipBox=document.getElementById('hitChips');
-  if(chipBox)chipBox.innerHTML=chips.join('')||'<span class="smallNote">まだ当たり回転数はありません。</span>';
+  if(chipBox)chipBox.innerHTML=chips.join('')||'<span class="smallNote">この日の当たり回転数はまだありません。</span>';
 
-  const bigCount=currentHits.big.length;
-  const regCount=currentHits.reg.length;
-  const total=bigCount+regCount;
-  ['hitBigCount','hitBigCountPage'].forEach(id=>{const el=document.getElementById(id); if(el)el.textContent=fmt(bigCount);});
-  ['hitRegCount','hitRegCountPage'].forEach(id=>{const el=document.getElementById(id); if(el)el.textContent=fmt(regCount);});
-  ['hitTotalCount','hitTotalCountPage'].forEach(id=>{const el=document.getElementById(id); if(el)el.textContent=fmt(total);});
+  const pageBig=pageHits.filter(h=>h.type==='big').length;
+  const pageReg=pageHits.filter(h=>h.type==='reg').length;
+  const pageTotal=pageBig+pageReg;
+  ['hitBigCountPage'].forEach(id=>{const el=document.getElementById(id); if(el)el.textContent=fmt(pageBig);});
+  ['hitRegCountPage'].forEach(id=>{const el=document.getElementById(id); if(el)el.textContent=fmt(pageReg);});
+  ['hitTotalCountPage'].forEach(id=>{const el=document.getElementById(id); if(el)el.textContent=fmt(pageTotal);});
+
+  const mainDate=document.getElementById('date')?.value || today();
+  const mainHits=hitsForDate(mainDate);
+  const mainBig=mainHits.filter(h=>h.type==='big').length;
+  const mainReg=mainHits.filter(h=>h.type==='reg').length;
+  const mainTotal=mainBig+mainReg;
+  ['hitBigCount'].forEach(id=>{const el=document.getElementById(id); if(el)el.textContent=fmt(mainBig);});
+  ['hitRegCount'].forEach(id=>{const el=document.getElementById(id); if(el)el.textContent=fmt(mainReg);});
+  ['hitTotalCount'].forEach(id=>{const el=document.getElementById(id); if(el)el.textContent=fmt(mainTotal);});
 }
+
 function sum(list){
   return list.reduce((a,r)=>{
     a.invest+=totalInvestMedalsOf(r);
@@ -1139,8 +1181,6 @@ function sum(list){
     a.reg+=Number(r.reg)||0;
     a.miss+=Number(r.regMiss)||0;
     a.satsume+=Number(r.satsume)||0;
-    const h=normalizeHits(r.hits);
-    a.hits+=h.big.length+h.reg.length;
     return a;
   },{invest:0,medalInvest:0,cashYen:0,returnMedals:0,diff:0,missLoss:0,iceMiss:0,iceLoss:0,totalLoss:0,noMissDiff:0,games:0,big:0,reg:0,miss:0,satsume:0,hits:0});
 }
@@ -1151,7 +1191,6 @@ function renderTable(){
     const g=Number(r.games)||0;
     const d=diffOf(r);
     const p=g?payoutOf(r).toFixed(1):'0.0';
-    const h=normalizeHits(r.hits);
     return `<tr>
       <td><input type="checkbox" class="rowCheck" value="${r.id}"></td>
       <td>${r.date}</td>
@@ -1172,16 +1211,15 @@ function renderTable(){
       <td class="${(totalLossOf(r)<0)?'warn':''}">${fmtSigned(totalLossOf(r))}</td>
       <td class="${cls(noMissDiffOf(r))}">${fmtSigned(noMissDiffOf(r))}</td>
       <td class="${r.satsume>0?'warn':''}">${fmt(r.satsume)}</td>
-      <td>${fmt(h.big.length+h.reg.length)}</td>
       <td><button class="linkBtn edit" onclick="editRecord('${r.id}')">編集</button> <button class="linkBtn del" onclick="deleteRecord('${r.id}')">削除</button></td>
     </tr>`
-  }).join('')||'<tr><td colspan="21">この月の記録はありません。</td></tr>';
+  }).join('')||'<tr><td colspan="20">この月の記録はありません。</td></tr>';
   const s=sum(list);
   document.getElementById('recordFoot').innerHTML=`<tr>
     <td></td><td>合計</td><td>${fmt(s.medalInvest)}</td><td>${fmt(s.returnMedals)}</td><td class="${cls(s.diff)}">${fmtSigned(s.diff)}</td><td>${fmt(s.games)}</td>
     <td>${s.games?((s.games*3+s.diff)/(s.games*3)*100).toFixed(1):'0.0'}</td>
     <td>${fmt(s.big)}</td><td>${fmt(s.reg)}</td><td>${prob(s.games,s.big)}</td><td>${prob(s.games,s.reg)}</td><td>${prob(s.games,s.big+s.reg)}</td>
-    <td class="warn">${fmt(s.miss)}</td><td class="warn">${fmtSigned(s.missLoss)}</td><td class="warn">${fmt(s.iceMiss)}</td><td class="warn">${fmtSigned(s.iceLoss)}</td><td class="warn">${fmtSigned(s.totalLoss)}</td><td class="${cls(s.noMissDiff)}">${fmtSigned(s.noMissDiff)}</td><td class="warn">${fmt(s.satsume)}</td><td>${fmt(s.hits)}</td><td></td>
+    <td class="warn">${fmt(s.miss)}</td><td class="warn">${fmtSigned(s.missLoss)}</td><td class="warn">${fmt(s.iceMiss)}</td><td class="warn">${fmtSigned(s.iceLoss)}</td><td class="warn">${fmtSigned(s.totalLoss)}</td><td class="${cls(s.noMissDiff)}">${fmtSigned(s.noMissDiff)}</td><td class="warn">${fmt(s.satsume)}</td><td></td>
   </tr>`;
 }
 function fillSummary(prefix,list){
@@ -1307,26 +1345,29 @@ function renderChart(){
   </svg>`;
 }
 function renderHitAnalysis(){
-  const type=document.getElementById('hitType').value;
-  const bucket=Number(document.getElementById('hitBucket').value)||100;
-  const rows=[];
-  selectedMonthRecords().forEach(r=>{
-    const h=normalizeHits(r.hits);
-    ['big','reg'].forEach(t=>{
-      if(type!=='all'&&type!==t)return;
-      h[t].forEach((g,hitIndex)=>rows.push({recordId:r.id,hitIndex,date:r.date,type:t,game:Number(g)||0,memo:r.memo||''}));
-    });
-  });
-  rows.sort((a,b)=>a.game-b.game);
+  const type=document.getElementById('hitType')?.value || 'all';
+  const bucket=Number(document.getElementById('hitBucket')?.value)||100;
+  const baseDate=document.getElementById('hitPageDate')?.value || today();
+  const targetMonth=ymFromDate(baseDate);
+  const rows=hitRecords
+    .filter(h=>ymFromDate(h.date)===targetMonth)
+    .filter(h=>type==='all' || h.type===type)
+    .map(h=>({recordId:h.id,date:h.date,type:h.type,game:Number(h.game)||0,memo:h.memo||''}))
+    .filter(h=>h.game>0)
+    .sort((a,b)=>a.game-b.game);
+
   const total=rows.length;
   const body=document.getElementById('distBody');
   const raw=document.getElementById('hitRawBody');
+  if(!body||!raw)return;
+
   if(!total){
     body.innerHTML='<tr><td colspan="4">当たり回転数の記録がありません。</td></tr>';
     raw.innerHTML='<div class="smallNote">当たり回転数の記録がありません。</div>';
-    setText('hitNote','当たり回転数を入力して保存すると、ここに集計されます。');
+    setText('hitNote',`${targetMonth} の当たり回転数はまだありません。収支データとは別保存です。`);
     return;
   }
+
   const max=Math.max(...rows.map(r=>r.game));
   const bucketMax=Math.ceil(max/bucket)*bucket;
   const counts=[];
@@ -1337,8 +1378,9 @@ function renderHitAnalysis(){
   const top=Math.max(...counts.map(c=>c.count),1);
   body.innerHTML=counts.map(c=>{
     const pct=c.count/total*100;
-    return `<tr><td>${fmt(c.start)}〜${fmt(c.end)}</td><td>${fmt(c.count)}</td><td>${pct.toFixed(1)}%</td><td><span class="bar" style="width:${Math.max(2,Math.round(c.count/top*100))}%"></span></td></tr>`
+    return `<tr><td>${fmt(c.start)}〜${fmt(c.end)}</td><td>${fmt(c.count)}</td><td>${pct.toFixed(1)}%</td><td><span class="bar" style="width:${Math.max(2,Math.round(c.count/top*100))}%"></span></td></tr>`;
   }).join('');
+
   const byDate={};
   rows.forEach(r=>{
     if(!byDate[r.date])byDate[r.date]=[];
@@ -1348,7 +1390,7 @@ function renderHitAnalysis(){
     const items=byDate[date].sort((a,b)=>a.game-b.game);
     const bigN=items.filter(x=>x.type==='big').length;
     const regN=items.filter(x=>x.type==='reg').length;
-    const chips=items.map(r=>`<span class="chip savedHitChip ${r.type==='big'?'big':'reg'}">${r.type==='big'?'BIG':'REG'} ${fmt(r.game)}G <button class="chipEdit" onclick="editSavedHit('${r.recordId}','${r.type}',${r.hitIndex})">編集</button></span>`).join('');
+    const chips=items.map(r=>`<span class="chip savedHitChip ${r.type==='big'?'big':'reg'}">${r.type==='big'?'BIG':'REG'} ${fmt(r.game)}G <button class="chipEdit" onclick="editHitRecord('${r.recordId}')">編集</button> <button onclick="deleteHitRecord('${r.recordId}')">×</button></span>`).join('');
     const memo=items.find(x=>x.memo)?.memo||'';
     return `<details class="dateGroup" ${idx===0?'open':''}>
       <summary>
@@ -1358,27 +1400,10 @@ function renderHitAnalysis(){
       <div class="dateGroupBody">${chips}${memo?`<div class="smallNote" style="width:100%">メモ：${escapeHtml(memo)}</div>`:''}</div>
     </details>`;
   }).join('');
+
   const u100=rows.filter(r=>r.game<=100).length;
   const u200=rows.filter(r=>r.game<=200).length;
-  setText('hitNote',`100G以内：${fmt(u100)}回（${(u100/total*100).toFixed(1)}%） / 200G以内：${fmt(u200)}回（${(u200/total*100).toFixed(1)}%）`);
-}
-
-function editSavedHit(recordId,type,hitIndex){
-  const r=records.find(x=>x.id===recordId);
-  if(!r)return;
-  const h=normalizeHits(r.hits);
-  if(type!=='big'&&type!=='reg')return;
-  const oldVal=h[type][hitIndex];
-  const input=prompt(`${type==='big'?'BIG':'REG'}の当たり回転数を編集`, oldVal);
-  if(input===null)return;
-  const v=Number(input);
-  if(!v || v<=0){alert('1以上の回転数を入力してください。');return;}
-  h[type][hitIndex]=v;
-  r.hits=h;
-  r.updatedAt=new Date().toISOString();
-  saveLocal();
-  renderAll();
-  toast('当たり回転数を編集しました');
+  setText('hitNote',`${targetMonth} / 100G以内：${fmt(u100)}回（${(u100/total*100).toFixed(1)}%） / 200G以内：${fmt(u200)}回（${(u200/total*100).toFixed(1)}%） ※収支データとは別保存`);
 }
 
 function renderAll(){
@@ -1410,22 +1435,40 @@ function selectedIds(){
 }
 function deleteSelected(){
   const ids=selectedIds();
-  if(!ids.length){alert('削除する行を選択してください。');return}
-  if(!confirm(`${ids.length}件を削除しますか？`))return;
+  if(!ids.length){alert('削除する行にチェックを入れてください。');return}
+  if(!confirm(`チェックした ${ids.length} 件の収支データを削除しますか？`))return;
   records=records.filter(r=>!ids.includes(r.id));
   saveLocal();
   renderAll();
-  toast('選択行を削除しました');
+  toast('チェックした行を削除しました');
 }
+
+function deleteAllData(){
+  const msg='収支データと当たり回転数データを全部削除します。\n設定（46枚貸しなど）は残します。\n本当に削除しますか？';
+  if(!confirm(msg))return;
+  const msg2='元に戻せません。バックアップ済みならOKを押してください。';
+  if(!confirm(msg2))return;
+
+  records=[];
+  hitRecords=[];
+  saveLocal();
+  saveHitLocal();
+
+  resetForm();
+  renderHitChips();
+  renderHitAnalysis();
+  renderAll();
+  toast('全データを削除しました');
+}
+
 function exportCSV(){
   const list=selectedMonthRecords();
-  const header=['date','medalInvest','returnMedals','diff','regMissLoss','iceLoss','totalLoss','noMissDiff','games','payout','big','reg','bigProb','regProb','totalProb','regMiss','iceMiss','cashYen','memo','bigHits','regHits'];
+  const header=['date','medalInvest','returnMedals','diff','regMissLoss','iceLoss','totalLoss','noMissDiff','games','payout','big','reg','bigProb','regProb','totalProb','regMiss','iceMiss','cashYen','memo'];
   const lines=[header.join(',')];
   list.forEach(r=>{
-    const g=Number(r.games)||0,h=normalizeHits(r.hits);
+    const g=Number(r.games)||0;
     const row=[
-      r.date,r.invest,r.returnMedals,diffOf(r),missLossOf(r),iceLossOf(r),totalLossOf(r),noMissDiffOf(r),g,g?payoutOf(r).toFixed(1):'0.0',r.big,r.reg,prob(g,r.big),prob(g,r.reg),prob(g,(Number(r.big)||0)+(Number(r.reg)||0)),r.regMiss,r.iceMiss||0,r.satsume,r.memo,
-      h.big.join('|'),h.reg.join('|')
+      r.date,r.invest,r.returnMedals,diffOf(r),missLossOf(r),iceLossOf(r),totalLossOf(r),noMissDiffOf(r),g,g?payoutOf(r).toFixed(1):'0.0',r.big,r.reg,prob(g,r.big),prob(g,r.reg),prob(g,(Number(r.big)||0)+(Number(r.reg)||0)),r.regMiss,r.iceMiss||0,r.satsume,r.memo
     ].map(csvCell);
     lines.push(row.join(','));
   });
@@ -1458,7 +1501,6 @@ function importCSV(e){
         iceMiss:Number(cols[16]||0)||0,
         satsume:Number(cols[17]||cols[14]||cols[12])||0,
         memo:cols[18]||cols[15]||cols[13]||'',
-        hits:{big:(cols[19]||cols[16]||cols[14]||'').split('|').filter(Boolean).map(Number),reg:(cols[20]||cols[17]||cols[15]||'').split('|').filter(Boolean).map(Number)},
         createdAt:new Date().toISOString()
       });
     });
@@ -1488,11 +1530,11 @@ function parseCSV(line){
   return out;
 }
 function backupMonth(){
-  const data={app:'hanabi_form_v3',month:currentMonth,settings,records:selectedMonthRecords(),exportedAt:new Date().toISOString()};
+  const data={app:'hanabi_form_v3',month:currentMonth,settings,records:selectedMonthRecords(),hitRecords:hitRecords.filter(h=>ymFromDate(h.date)===currentMonth),exportedAt:new Date().toISOString()};
   download(`hanabi_backup_${currentMonth}.json`,JSON.stringify(data,null,2),'application/json');
 }
 function backupAll(){
-  const data={app:'hanabi_form_v3',settings,records,exportedAt:new Date().toISOString()};
+  const data={app:'hanabi_form_v3',settings,records,hitRecords,exportedAt:new Date().toISOString()};
   download(`hanabi_backup_all.json`,JSON.stringify(data,null,2),'application/json');
 }
 function restoreJSON(e){
@@ -1503,14 +1545,19 @@ function restoreJSON(e){
       const data=JSON.parse(reader.result);
       const list=Array.isArray(data.records)?data.records:[];
       if(data.settings){settings={...settings,...data.settings};localStorage.setItem(SETKEY,JSON.stringify(settings));const rateEl=document.getElementById('rateInput');if(rateEl)rateEl.value=settings.rate||46;}
-      if(!list.length){alert('読み込む記録がありません。');return}
+      const hitList=Array.isArray(data.hitRecords)?data.hitRecords:[];
+      if(!list.length && !hitList.length){alert('読み込む記録がありません。');return}
       if(document.getElementById('replaceMode').checked){
-        const months=new Set(list.map(r=>ymFromDate(r.date)));
+        const months=new Set([...list.map(r=>ymFromDate(r.date)), ...hitList.map(h=>ymFromDate(h.date))]);
         records=records.filter(r=>!months.has(ymFromDate(r.date))).concat(list);
+        hitRecords=hitRecords.filter(h=>!months.has(ymFromDate(h.date))).concat(hitList);
       }else{
         records=records.concat(list.map(r=>({...r,id:r.id||'rec-'+Date.now()+'-'+Math.random().toString(16).slice(2)})));
+        hitRecords=hitRecords.concat(hitList.map(h=>({...h,id:h.id||'hit-'+Date.now()+'-'+Math.random().toString(16).slice(2)})));
       }
       saveLocal();
+      saveHitLocal();
+      renderHitChips();
       renderAll();
       toast('JSONを読み込みました');
     }catch(err){alert('JSONを読み込めませんでした。')}
@@ -1531,10 +1578,10 @@ function exportSelectedText(){
   download(`hanabi_selected_${currentMonth}.txt`,list.map(formatText).join('\n\n'),'text/plain');
 }
 function exportRawMonth(){
-  download(`hanabi_raw_${currentMonth}.json`,JSON.stringify(selectedMonthRecords(),null,2),'application/json');
+  download(`hanabi_raw_${currentMonth}.json`,JSON.stringify({records:selectedMonthRecords(),hitRecords:hitRecords.filter(h=>ymFromDate(h.date)===currentMonth)},null,2),'application/json');
 }
 function formatText(r){
-  const g=Number(r.games)||0,h=normalizeHits(r.hits);
+  const g=Number(r.games)||0;
   return [
     `日付：${r.date}`,
     `持ちメダル投資：${fmt(r.invest)}枚`,
@@ -1553,8 +1600,6 @@ function formatText(r){
     `欠損合計：${fmtSigned(totalLossOf(r))}枚`,
     `ミスなし差枚：${fmtSigned(noMissDiffOf(r))}枚`,
     `現金投資：${fmt(r.satsume)}円（${fmt(cashToMedals(r.satsume))}枚換算）`,
-    `BIG当たり回転数：${h.big.join(', ')||'-'}`,
-    `REG当たり回転数：${h.reg.join(', ')||'-'}`,
     `メモ：${r.memo||'-'}`
   ].join('\n');
 }
@@ -1567,19 +1612,47 @@ function download(name,content,type){
   URL.revokeObjectURL(a.href);
 }
 function fillSample(){
-  document.getElementById('date').value=currentMonth+'-10';
-  document.getElementById('invest').value=460;
-  document.getElementById('returnMedals').value=1051;
-  document.getElementById('games').value=2328;
-  document.getElementById('big').value=11;
-  document.getElementById('reg').value=9;
-  document.getElementById('regMiss').value=2;
-  document.getElementById('iceMiss').value=1;
-  document.getElementById('satsume').value=0;
-  document.getElementById('memo').value='サンプル';
-  currentHits={big:[74,106,232,516],reg:[138,280,430]};
+  // 押すたびに違うサンプルを作る
+  const rand=(min,max)=>Math.floor(Math.random()*(max-min+1))+min;
+  const pick=arr=>arr[Math.floor(Math.random()*arr.length)];
+
+  const day=String(rand(1,28)).padStart(2,'0');
+  const sampleDate=currentMonth ? `${currentMonth}-${day}` : today();
+
+  const games=rand(1200,5200);
+  const big=Math.max(0,Math.round(games / rand(245,330)));
+  const reg=Math.max(0,Math.round(games / rand(260,390)));
+
+  const cashYen=pick([0,0,1000,2000,3000,5000,8000,10000,12000]);
+  const medalInvest=pick([0,0,46,92,138,184,230,276,322,460]);
+
+  // 102%付近を中心に、少し荒れるサンプル差枚
+  const expected=Math.round(games*3*0.02);
+  const rough=rand(-900,1200);
+  const rare=Math.random()<0.15 ? pick([-1800,-1200,1500,2200]) : 0;
+  const sampleDiff=expected+rough+rare;
+
+  const totalInvest=medalInvest+cashToMedals(cashYen);
+  const returnMedals=Math.max(0,totalInvest+sampleDiff);
+
+  document.getElementById('date').value=sampleDate;
+  document.getElementById('invest').value=medalInvest;
+  document.getElementById('returnMedals').value=returnMedals;
+  document.getElementById('games').value=games;
+  document.getElementById('big').value=big;
+  document.getElementById('reg').value=reg;
+  document.getElementById('regMiss').value=pick([0,0,0,1,1,2]);
+  document.getElementById('iceMiss').value=pick([0,0,0,0,1,1,2]);
+  document.getElementById('satsume').value=cashYen;
+  document.getElementById('memo').value=`サンプル ${rand(100,999)}番台`;
+
+  const hitDate=document.getElementById('hitPageDate');
+  if(hitDate)hitDate.value=sampleDate;
+
   renderHitChips();
+  renderHitAnalysis();
   updatePreview();
+  toast('ランダムサンプルを入力しました');
 }
 function escapeHtml(s){
   return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
