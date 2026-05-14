@@ -1,542 +1,1247 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>新ハナビ収支手帳 v2</title>
-  <style>
-    :root{
-      --bg:#f5f7fb;
-      --card:#ffffff;
-      --text:#1f2937;
-      --muted:#6b7280;
-      --line:#dbe3ef;
-      --blue:#2563eb;
-      --green:#16a34a;
-      --red:#dc2626;
-      --orange:#f59e0b;
-      --purple:#7c3aed;
-      --shadow:0 10px 24px rgba(15,23,42,.08);
-      --radius:18px;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      background:linear-gradient(180deg,#edf4ff 0%,var(--bg) 240px);
-      color:var(--text);
-      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      line-height:1.6;
-    }
-    header{
-      padding:18px 14px 8px;
-      position:sticky;
-      top:0;
-      z-index:20;
-      background:rgba(245,247,251,.92);
-      backdrop-filter:blur(10px);
-      border-bottom:1px solid rgba(219,227,239,.8);
-    }
-    .wrap{max-width:1180px;margin:0 auto;padding:0 14px 32px}
-    .topbar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-    h1{font-size:24px;margin:0;letter-spacing:.02em}
-    .version{
-      display:inline-flex;align-items:center;gap:6px;
-      background:#e0f2fe;color:#075985;border:1px solid #bae6fd;
-      padding:5px 10px;border-radius:999px;font-size:13px;font-weight:700;
-    }
-    .update-banner{
-      margin:12px auto 0;
-      max-width:1180px;
-      background:#ecfdf5;
-      color:#065f46;
-      border:1px solid #bbf7d0;
-      padding:10px 12px;
-      border-radius:14px;
-      font-weight:700;
-      font-size:14px;
-    }
-    .tabs{
-      display:flex;gap:8px;overflow-x:auto;padding:12px 0 2px;
-    }
-    .tabbtn,.btn{
-      border:0;border-radius:14px;padding:11px 14px;font-weight:800;cursor:pointer;
-      background:#e5e7eb;color:#111827;white-space:nowrap;
-      transition:.15s transform,.15s opacity,.15s background;
-    }
-    .tabbtn.active{background:var(--blue);color:white}
-    .btn:active,.tabbtn:active{transform:scale(.98)}
-    .btn.primary{background:var(--green);color:white}
-    .btn.blue{background:var(--blue);color:white}
-    .btn.red{background:var(--red);color:white}
-    .btn.orange{background:var(--orange);color:white}
-    .btn.purple{background:var(--purple);color:white}
-    .btn.light{background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe}
-    main{padding-top:14px}
-    .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:16px;align-items:start}
-    .card{
-      background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;
-    }
-    .card h2{font-size:18px;margin:0 0 12px}
-    .card h3{font-size:16px;margin:16px 0 8px}
-    .mini{font-size:13px;color:var(--muted)}
-    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-    .form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
-    label{display:block;font-size:13px;font-weight:800;color:#374151;margin-bottom:4px}
-    input,select,textarea{
-      width:100%;border:1px solid #cfd8e6;background:#fff;border-radius:12px;padding:10px 11px;
-      font-size:16px;outline:none;
-    }
-    input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
-    textarea{min-height:88px;resize:vertical}
-    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-    .stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-    .stat{
-      background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:12px;
-    }
-    .stat .label{font-size:12px;color:var(--muted);font-weight:800}
-    .stat .value{font-size:22px;font-weight:900;margin-top:3px}
-    .plus{color:var(--red)}
-    .minus{color:var(--blue)}
-    .zero{color:#374151}
-    .section{display:none}
-    .section.active{display:block}
-    table{width:100%;border-collapse:separate;border-spacing:0 8px;font-size:14px}
-    th{font-size:12px;color:var(--muted);text-align:left;padding:0 8px}
-    td{background:#f8fafc;border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;padding:9px 8px;vertical-align:top}
-    td:first-child{border-left:1px solid #e2e8f0;border-radius:12px 0 0 12px}
-    td:last-child{border-right:1px solid #e2e8f0;border-radius:0 12px 12px 0}
-    .row-actions{display:flex;gap:6px;flex-wrap:wrap}
-    .smallbtn{border:0;border-radius:10px;padding:6px 8px;font-weight:800;cursor:pointer;background:#e5e7eb}
-    .smallbtn.edit{background:#dbeafe;color:#1d4ed8}
-    .smallbtn.del{background:#fee2e2;color:#b91c1c}
-    .chartBox{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:10px;overflow:auto}
-    svg{max-width:100%;height:auto;display:block}
-    .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:8px}
-    .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
-    .toast{
-      position:fixed;right:14px;bottom:14px;background:#111827;color:white;padding:12px 14px;border-radius:14px;
-      box-shadow:var(--shadow);opacity:0;transform:translateY(8px);transition:.2s;z-index:99;font-weight:800;
-    }
-    .toast.show{opacity:1;transform:translateY(0)}
-    .noteBox{
-      background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:14px;padding:10px;font-size:13px;margin-top:10px;
-    }
-    .quickCalc{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}
-    .hidden{display:none!important}
-    @media(max-width:900px){
-      .grid{grid-template-columns:1fr}
-      .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .form-grid,.form-grid.three,.quickCalc{grid-template-columns:1fr}
-      h1{font-size:21px}
-      header{position:static}
-      table{font-size:13px}
-      .tableScroll{overflow-x:auto}
-    }
-    @media print{
-      header,.no-print,.actions,.row-actions{display:none!important}
-      body{background:white}
-      .wrap{max-width:none;padding:0}
-      .card{box-shadow:none;border:1px solid #bbb;break-inside:avoid}
-      .section{display:block!important}
-      .section:not(#dashboard){display:none!important}
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>新ハナビ 収支フォーム v3</title>
+<style>
+:root{
+  --bg:#f4f8f8;
+  --card:#ffffff;
+  --ink:#111827;
+  --muted:#6b7280;
+  --line:#31363b;
+  --soft:#e5e7eb;
+  --red:#b91c1c;
+  --green:#059669;
+  --blue:#2563eb;
+  --orange:#ea580c;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:14px;
+  font-weight:600;
+}
+.wrap{
+  max-width:1180px;
+  margin:0 auto;
+  padding:18px 18px 34px;
+}
+.header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:12px;
+}
+h1{
+  margin:0;
+  font-size:28px;
+  line-height:1.15;
+  letter-spacing:.02em;
+}
+.sub{
+  color:#64748b;
+  font-size:13px;
+  margin-top:4px;
+  font-weight:700;
+}
+.monthBox{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+input,select,textarea,button{
+  font:inherit;
+}
+input,select,textarea{
+  width:100%;
+  background:#fff;
+  border:2px solid #7b8085;
+  border-radius:12px;
+  padding:10px 12px;
+  min-height:42px;
+  outline:none;
+}
+textarea{min-height:72px;resize:vertical}
+input:focus,select:focus,textarea:focus{
+  border-color:#111827;
+  box-shadow:0 0 0 3px rgba(17,24,39,.08);
+}
+button,.fileBtn{
+  border:2px solid #7b8085;
+  background:#fff;
+  color:#111827;
+  border-radius:12px;
+  padding:10px 14px;
+  min-height:42px;
+  font-weight:900;
+  cursor:pointer;
+  white-space:nowrap;
+  box-shadow:0 1px 0 rgba(0,0,0,.08);
+}
+button.black{
+  background:#050505;
+  color:#fff;
+  border-color:#050505;
+}
+button.red{
+  background:#fff1f2;
+  color:#b91c1c;
+  border-color:#fecdd3;
+}
+button.blue{
+  background:#eff6ff;
+  color:#1d4ed8;
+  border-color:#bfdbfe;
+}
+button.orange{
+  background:#fff7ed;
+  color:#c2410c;
+  border-color:#fed7aa;
+}
+button.green{
+  background:#ecfdf5;
+  color:#047857;
+  border-color:#a7f3d0;
+}
+button:active{transform:translateY(1px)}
+.card{
+  background:var(--card);
+  border:2px solid #4b5563;
+  border-radius:16px;
+  padding:22px;
+  margin:16px 0 22px;
+  box-shadow:0 2px 2px rgba(0,0,0,.03);
+}
+.formGrid{
+  display:grid;
+  grid-template-columns:1.3fr 1fr 1fr 1fr 1fr 1fr 1fr;
+  gap:10px 12px;
+  align-items:end;
+}
+.formGrid .wide2{grid-column:span 2}
+label{
+  display:block;
+  color:#4b5563;
+  font-size:13px;
+  margin:0 0 5px;
+  font-weight:900;
+}
+.preview{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:18px;
+  margin:18px 0 10px;
+}
+.preview div{
+  white-space:nowrap;
+}
+.val{
+  font-weight:950;
+  color:#111827;
+}
+.plus{color:var(--green)!important}
+.minus{color:var(--red)!important}
+.warn{color:var(--red)!important}
+.actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.hitArea{
+  border:1px dashed #9ca3af;
+  border-radius:14px;
+  padding:12px;
+  margin-top:14px;
+  background:#fafafa;
+}
+.hitInput{
+  display:grid;
+  grid-template-columns:1fr auto auto auto;
+  gap:8px;
+  align-items:end;
+}
+.quickBtns{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:8px;
+}
+.quickBtns button{padding:8px 12px;min-height:36px}
+.chips{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+.chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  border-radius:999px;
+  padding:7px 10px;
+  font-size:13px;
+  font-weight:950;
+}
+.chip.big{background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd}
+.chip.reg{background:#ffedd5;color:#c2410c;border:1px solid #fdba74}
+.chip button{
+  min-height:20px;
+  width:22px;
+  height:22px;
+  padding:0;
+  border-radius:999px;
+  border:0;
+  background:rgba(255,255,255,.75);
+}
+.tableWrap{
+  overflow:auto;
+  border:2px solid #4b5563;
+  border-radius:14px;
+  background:#fff;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:960px;
+}
+th,td{
+  border-bottom:1px solid #6b7280;
+  padding:9px 8px;
+  text-align:center;
+  vertical-align:middle;
+  white-space:nowrap;
+}
+th{
+  background:#f8fafc;
+  color:#374151;
+  font-size:13px;
+}
+tbody tr:hover{background:#f9fafb}
+tfoot td{
+  background:#f8fafc;
+  font-weight:950;
+  border-top:2px solid #111827;
+}
+.checkCol{width:34px}
+.linkBtn{
+  border:0;
+  background:transparent;
+  min-height:auto;
+  padding:2px 4px;
+  box-shadow:none;
+  border-radius:4px;
+}
+.edit{color:#1d4ed8}
+.del{color:#b91c1c}
+.summaryBox{
+  border:2px solid #4b5563;
+  border-radius:16px;
+  background:#fff;
+  padding:18px 22px;
+  margin:16px 0 22px;
+}
+.summaryRow{
+  display:grid;
+  grid-template-columns:1.4fr repeat(6,1fr);
+  gap:14px;
+  align-items:center;
+  padding:9px 0;
+}
+.summaryRow + .summaryRow{border-top:1px solid #4b5563}
+.summaryTitle{font-weight:950}
+.graphHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:10px;
+}
+.toggle{
+  display:inline-flex;
+  border:2px solid #7b8085;
+  border-radius:12px;
+  overflow:hidden;
+}
+.toggle button{
+  border:0;
+  border-radius:0;
+  min-height:34px;
+  padding:6px 14px;
+}
+.toggle button.active{
+  background:#050505;
+  color:#fff;
+}
+.graphMeta{
+  display:flex;
+  gap:20px;
+  flex-wrap:wrap;
+  color:#374151;
+  font-weight:900;
+}
+.chartBox{
+  background:#fff;
+  border-radius:10px;
+  padding:12px;
+  min-height:260px;
+  overflow:auto;
+}
+
+.graphCard{
+  background:radial-gradient(circle at 50% 10%, #5f5f5f 0%, #3f3f3f 35%, #252525 70%, #1b1b1b 100%);
+  color:#f3f4f6;
+  border-color:#2c2c2c;
+}
+.graphCard .graphHead h2,
+.graphCard .graphMeta,
+.graphCard .legend{
+  color:#f3f4f6;
+}
+.graphCard .graphMeta span{
+  color:#f3f4f6;
+}
+.graphCard .toggle{
+  border-color:#8a8a8a;
+  background:rgba(255,255,255,.08);
+}
+.graphCard .toggle button{
+  background:transparent;
+  color:#f3f4f6;
+}
+.graphCard .toggle button.active{
+  background:#050505;
+  color:#fff;
+}
+.graphCard .chartBox{
+  background:transparent;
+  min-height:360px;
+  padding:8px 0 0;
+}
+.graphCard .legend{
+  justify-content:center;
+  margin-top:14px;
+}
+.graphCard .graphDiffPositive{color:#7dd3fc}
+.graphCard .graphDiffNegative{color:#fca5a5}
+
+.legend{
+  display:flex;
+  gap:16px;
+  flex-wrap:wrap;
+  color:#4b5563;
+  font-size:13px;
+  margin-top:8px;
+}
+.dot{
+  display:inline-block;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  margin-right:5px;
+}
+.backupGrid{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.smallNote{
+  color:#6b7280;
+  font-size:12px;
+  margin-top:8px;
+  font-weight:700;
+}
+.hidden{display:none!important}
+.distGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+.bar{
+  display:inline-block;
+  height:10px;
+  min-width:2px;
+  border-radius:999px;
+  background:#111827;
+}
+.toast{
+  position:fixed;
+  right:16px;
+  bottom:16px;
+  background:#111827;
+  color:white;
+  padding:12px 16px;
+  border-radius:12px;
+  opacity:0;
+  transform:translateY(8px);
+  transition:.2s;
+  font-weight:900;
+  z-index:100;
+}
+.toast.show{opacity:1;transform:translateY(0)}
+@media(max-width:900px){
+  .wrap{padding:14px 10px 28px}
+  .header{display:block}
+  .monthBox{justify-content:flex-start;margin-top:12px}
+  h1{font-size:24px}
+  .card{padding:14px}
+  .formGrid{grid-template-columns:1fr 1fr}
+  .preview{grid-template-columns:1fr 1fr}
+  .hitInput{grid-template-columns:1fr}
+  .summaryRow{grid-template-columns:1fr 1fr}
+  .distGrid{grid-template-columns:1fr}
+  button,.fileBtn{padding:9px 11px}
+}
+@media print{
+  body{background:white}
+  .monthBox,.actions,.backupGrid,.toggle,.linkBtn,.hitArea,.noPrint{display:none!important}
+  .wrap{max-width:none;padding:0}
+  .card,.summaryBox,.tableWrap{box-shadow:none;break-inside:avoid}
+}
+</style>
 </head>
 <body>
-  <header>
-    <div class="topbar wrap" style="padding-bottom:0">
+<div class="wrap">
+  <div class="header">
+    <div>
+      <h1>新ハナビ 収支フォーム</h1>
+      <div class="sub">入力→日別表→月間集計→差枚グラフ→BIG/REG別 当たり回転数分析。ローカル保存対応。</div>
+    </div>
+    <div class="monthBox">
+      <input type="month" id="monthPicker" onchange="setMonthFromPicker()" style="width:160px">
+      <button onclick="moveMonth(-1)">←</button>
+      <button onclick="moveMonth(1)">→</button>
+      <button class="black" onclick="exportCSV()">CSV出力</button>
+      <label class="fileBtn">CSV取込<input class="hidden" type="file" accept=".csv,text/csv" onchange="importCSV(event)"></label>
+    </div>
+  </div>
+
+  <section class="card">
+    <div class="formGrid">
+      <div class="wide2">
+        <label>日付</label>
+        <input type="date" id="date">
+      </div>
       <div>
-        <h1>新ハナビ収支手帳 <span class="version">NEW v2</span></h1>
-        <div class="mini">差枚・機械割・ボーナス確率・RBミス率・日別グラフをまとめて管理</div>
+        <label>持ちメダル投資（枚）</label>
+        <input type="number" id="invest" value="0" oninput="updatePreview()">
       </div>
-      <div class="actions no-print" style="margin-top:0">
-        <button class="btn light" onclick="exportBackup()">バックアップ</button>
-        <label class="btn light" style="margin:0;cursor:pointer">復元<input class="hidden" type="file" accept="application/json" onchange="importBackup(event)"></label>
+      <div>
+        <label>回収（枚）</label>
+        <input type="number" id="returnMedals" value="0" oninput="updatePreview()">
+      </div>
+      <div>
+        <label>G数</label>
+        <input type="number" id="games" value="0" oninput="updatePreview()">
+      </div>
+      <div>
+        <label>BIG</label>
+        <input type="number" id="big" value="0" oninput="updatePreview()">
+      </div>
+      <div>
+        <label>REG</label>
+        <input type="number" id="reg" value="0" oninput="updatePreview()">
+      </div>
+      <div>
+        <label>REG中失敗回数</label>
+        <input type="number" id="regMiss" value="0" oninput="updatePreview()">
+      </div>
+      <div>
+        <label>現金投資（円）</label>
+        <input type="number" id="satsume" value="0" oninput="updatePreview()">
+      </div>
+      <div class="wide2">
+        <label>店名・台番メモ</label>
+        <input id="memo" placeholder="例：〇〇店 527番台">
       </div>
     </div>
-    <div class="update-banner">アップデートしました：入力をスマホ向けに整理し、日別グラフ・RB技術介入ミス率・期待差枚メモを追加しました。</div>
-    <div class="wrap" style="padding-bottom:0">
-      <div class="tabs no-print">
-        <button class="tabbtn active" onclick="showTab('dashboard',this)">ダッシュボード</button>
-        <button class="tabbtn" onclick="showTab('input',this)">記録入力</button>
-        <button class="tabbtn" onclick="showTab('history',this)">履歴</button>
-        <button class="tabbtn" onclick="showTab('settings',this)">設定</button>
+
+    <div class="preview">
+      <div>プレビュー（自動計算）</div>
+      <div>差枚：<span class="val" id="pvDiff">0</span></div>
+      <div>現金換算：<span class="val" id="pvCashMedals">0枚</span></div>
+      <div>機械割：<span class="val" id="pvPayout">0.00%</span></div>
+      <div>BIG確率：<span class="val" id="pvBig">-</span></div>
+      <div>REG確率：<span class="val" id="pvReg">-</span></div>
+      <div></div>
+      <div>合算確率：<span class="val" id="pvTotal">-</span></div>
+      <div>102%目安：<span class="val plus" id="pvExpected">0</span></div>
+      <div>当たり入力：<span class="val" id="pvHits">0回</span></div>
+    </div>
+
+    <div class="hitArea">
+      <label>プレイ中かんたん入力：当たり回転数</label>
+      <div class="hitInput">
+        <input type="number" id="hitGame" placeholder="例：87" onkeydown="if(event.key==='Enter'){event.preventDefault();addHit('big')}">
+        <button class="blue" onclick="addHit('big')">BIG追加</button>
+        <button class="orange" onclick="addHit('reg')">REG追加</button>
+        <button onclick="clearHits()">当たり全消し</button>
+      </div>
+      <div class="quickBtns">
+        <button onclick="setHit(50)">50</button>
+        <button onclick="setHit(100)">100</button>
+        <button onclick="setHit(150)">150</button>
+        <button onclick="setHit(200)">200</button>
+        <button onclick="setHit(300)">300</button>
+        <button onclick="setHit(400)">400</button>
+      </div>
+      <div class="chips" id="hitChips"></div>
+      <div class="smallNote">当たった回転数を入力してBIG追加またはREG追加を押すと、BIG/REG回数も自動で増えます。</div>
+    </div>
+
+    <div class="actions" style="margin-top:16px">
+      <button class="black" onclick="saveRecord()">追加</button>
+      <button onclick="resetForm()">リセット</button>
+      <button class="green" onclick="fillSample()">サンプル入力</button>
+    </div>
+  </section>
+
+  <div class="tableWrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="checkCol"><input type="checkbox" onclick="toggleAllChecks(this)"></th>
+          <th>日付</th>
+          <th>持ちメダル投資</th>
+          <th>回収</th>
+          <th>差枚</th>
+          <th>G数</th>
+          <th>機械割(%)</th>
+          <th>BIG</th>
+          <th>REG</th>
+          <th>BIG確率</th>
+          <th>REG確率</th>
+          <th>合算確率</th>
+          <th>Miss</th>
+          <th>現金投資（円）</th>
+          <th>当たり</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="recordBody"></tbody>
+      <tfoot id="recordFoot"></tfoot>
+    </table>
+  </div>
+
+  <section class="summaryBox">
+    <div class="summaryRow">
+      <div class="summaryTitle">月間集計（<span id="monthLabel"></span>）</div>
+      <div>総投資枚数：<span id="mInvest"></span></div>
+      <div>総回収：<span id="mReturn"></span></div>
+      <div>合計差枚：<span id="mDiff"></span></div>
+      <div>総G：<span id="mGames"></span></div>
+      <div>機械割：<span id="mPayout"></span></div>
+      <div>BIG合計：<span id="mBig"></span></div>
+      <div>REG合計：<span id="mReg"></span></div>
+      <div>REG失敗合計：<span id="mMiss"></span></div>
+      <div>現金投資合計：<span id="mSatsume"></span></div>
+      <div>BB確率：<span id="mBigProb"></span></div>
+      <div>RB確率：<span id="mRegProb"></span></div>
+      <div>合算：<span id="mTotalProb"></span></div>
+    </div>
+    <div class="summaryRow">
+      <div class="summaryTitle">累計（全期間）</div>
+      <div>総投資枚数：<span id="aInvest"></span></div>
+      <div>総回収：<span id="aReturn"></span></div>
+      <div>合計差枚：<span id="aDiff"></span></div>
+      <div>総G：<span id="aGames"></span></div>
+      <div>機械割：<span id="aPayout"></span></div>
+      <div>BIG合計：<span id="aBig"></span></div>
+      <div>REG合計：<span id="aReg"></span></div>
+      <div>REG失敗合計：<span id="aMiss"></span></div>
+      <div>現金投資合計：<span id="aSatsume"></span></div>
+      <div>BB確率：<span id="aBigProb"></span></div>
+      <div>RB確率：<span id="aRegProb"></span></div>
+      <div>合算：<span id="aTotalProb"></span></div>
+    </div>
+  </section>
+
+  <section class="card graphCard">
+    <div class="graphHead">
+      <div style="width:100%">
+        <h2 style="margin:0 0 10px;text-align:center;font-size:24px;font-weight:950">差枚数グラフ</h2>
+        <div class="graphMeta" style="justify-content:space-between">
+          <span><span id="graphMonth"></span></span>
+          <span>累計差枚：<span id="graphDiff" class="graphDiffPositive"></span> 枚</span>
+        </div>
+      </div>
+      <div class="toggle">
+        <button id="graphMonthBtn" class="active" onclick="setGraphMode('month')">当月</button>
+        <button id="graphAllBtn" onclick="setGraphMode('all')">累計</button>
       </div>
     </div>
-  </header>
+    <div class="chartBox" id="chartBox"></div>
+    <div class="legend">
+      <span><span class="dot" style="background:#60a5fa"></span>累計差枚数</span>
+      <span><span class="dot" style="background:#fb923c"></span>期待値</span>
+      <span><span class="dot" style="background:#bdbdbd"></span>損益分岐ライン</span>
+    </div>
+  </section>
 
-  <main class="wrap">
-    <section id="dashboard" class="section active">
-      <div class="grid">
-        <div class="card">
-          <h2>集計</h2>
-          <div class="form-grid three no-print" style="margin-bottom:12px">
-            <div><label>開始日</label><input type="date" id="filterFrom"></div>
-            <div><label>終了日</label><input type="date" id="filterTo"></div>
-            <div><label>台番号 / 店舗</label><input id="filterKeyword" placeholder="空欄なら全件"></div>
-          </div>
-          <div class="actions no-print" style="margin-top:0;margin-bottom:12px">
-            <button class="btn blue" onclick="renderAll()">集計更新</button>
-            <button class="btn light" onclick="setThisMonth()">今月</button>
-            <button class="btn light" onclick="setAllRange()">全期間</button>
-            <button class="btn light" onclick="window.print()">印刷</button>
-          </div>
-          <div class="stat-grid" id="stats"></div>
-          <div class="noteBox" id="adviceBox"></div>
-        </div>
-        <div class="card">
-          <h2>かんたん計算</h2>
-          <div class="quickCalc">
-            <div><label>現金投資</label><input type="number" id="cashCalc" value="0" oninput="quickCalc()"></div>
-            <div><label>持ちメダル投資</label><input type="number" id="medalCalc" value="0" oninput="quickCalc()"></div>
-            <div><label>回収枚数</label><input type="number" id="returnCalc" value="0" oninput="quickCalc()"></div>
-          </div>
-          <div class="stat" style="margin-top:10px">
-            <div class="label">差枚</div>
-            <div class="value" id="quickResult">0枚</div>
-            <div class="mini">50枚=1,000円で計算。設定で貸し枚数を変更できます。</div>
-          </div>
-        </div>
+  <section class="card">
+    <div class="graphHead">
+      <div>
+        <h2 style="margin:0 0 6px">当たり回転数 分析</h2>
+        <div class="sub">BIG/REG別に、1〜100・101〜200のようなゾーン別割合を確認できます。</div>
       </div>
-      <div class="card" style="margin-top:16px">
-        <h2>日別グラフ</h2>
-        <div class="chartBox" id="chartBox"></div>
-        <div class="legend"><span><span class="dot" style="background:#2563eb"></span>区間差枚（折れ線）</span><span><span class="dot" style="background:#16a34a"></span>累計差枚（折れ線）</span><span><span class="dot" style="background:#f59e0b"></span>102%ライン</span><span>横軸：累計回転数</span></div>
+      <div class="actions noPrint">
+        <select id="hitType" onchange="renderHitAnalysis()" style="width:140px">
+          <option value="all">BIG＋REG</option>
+          <option value="big">BIGのみ</option>
+          <option value="reg">REGのみ</option>
+        </select>
+        <select id="hitBucket" onchange="renderHitAnalysis()" style="width:140px">
+          <option value="100">100回転ごと</option>
+          <option value="50">50回転ごと</option>
+          <option value="200">200回転ごと</option>
+        </select>
       </div>
-    </section>
-
-    <section id="input" class="section">
-      <div class="grid">
-        <div class="card">
-          <h2>記録入力</h2>
-          <input type="hidden" id="editId">
-          <div class="form-grid">
-            <div><label>日付</label><input type="date" id="date"></div>
-            <div><label>店舗</label><input id="shop" placeholder="例：〇〇店"></div>
-            <div><label>台番号</label><input id="machine" placeholder="例：527番台"></div>
-            <div><label>開始G</label><input type="number" id="startGame" value="0"></div>
-            <div><label>終了G</label><input type="number" id="endGame" value="0"></div>
-            <div><label>総ゲーム数</label><input type="number" id="games" value="0" placeholder="空なら終了G-開始G"></div>
-          </div>
-          <h3>ボーナス</h3>
-          <div class="form-grid three">
-            <div><label>BIG</label><input type="number" id="big" value="0"></div>
-            <div><label>REG</label><input type="number" id="reg" value="0"></div>
-            <div><label>RB技術介入ミス</label><input type="number" id="rbMiss" value="0"></div>
-          </div>
-          <h3>投資・回収</h3>
-          <div class="form-grid three">
-            <div><label>現金投資</label><input type="number" id="cash" value="0"></div>
-            <div><label>持ちメダル投資</label><input type="number" id="medalIn" value="0"></div>
-            <div><label>回収枚数</label><input type="number" id="medalOut" value="0"></div>
-          </div>
-          <h3>メモ</h3>
-          <textarea id="memo" placeholder="例：風鈴良好、氷落ち弱い、REG中2回ミスなど"></textarea>
-          <div class="actions">
-            <button class="btn primary" onclick="saveRecord()">保存</button>
-            <button class="btn light" onclick="clearForm()">新規入力に戻す</button>
-          </div>
-        </div>
-        <div class="card">
-          <h2>入力中の計算</h2>
-          <div class="stat-grid" id="liveStats"></div>
-          <div class="noteBox">総ゲーム数が空の場合は「終了G − 開始G」で自動計算します。差枚は「回収 − 現金投資分 − 持ちメダル投資」で計算します。</div>
-        </div>
+    </div>
+    <div class="distGrid">
+      <div class="tableWrap">
+        <table style="min-width:520px">
+          <thead><tr><th>回転数</th><th>回数</th><th>割合</th><th>グラフ</th></tr></thead>
+          <tbody id="distBody"></tbody>
+        </table>
       </div>
-    </section>
-
-    <section id="history" class="section">
-      <div class="card">
-        <h2>履歴</h2>
-        <div class="form-grid three no-print" style="margin-bottom:12px">
-          <div><label>検索</label><input id="historySearch" placeholder="店舗・台番号・メモ" oninput="renderHistory()"></div>
-          <div><label>並び順</label><select id="sortMode" onchange="renderHistory()"><option value="dateDesc">日付が新しい順</option><option value="dateAsc">日付が古い順</option><option value="diffDesc">差枚が多い順</option><option value="diffAsc">差枚が少ない順</option></select></div>
-          <div><label>表示</label><select id="limitMode" onchange="renderHistory()"><option value="all">全件</option><option value="20">最新20件</option><option value="50">最新50件</option></select></div>
-        </div>
-        <div class="tableScroll">
-          <table>
-            <thead>
-              <tr><th>日付</th><th>店舗/台</th><th>G数</th><th>BIG</th><th>REG</th><th>差枚</th><th>機械割</th><th>操作</th></tr>
-            </thead>
-            <tbody id="historyBody"></tbody>
-          </table>
-        </div>
+      <div class="tableWrap">
+        <table style="min-width:520px">
+          <thead><tr><th>日付</th><th>種類</th><th>当たり回転数</th><th>メモ</th></tr></thead>
+          <tbody id="hitRawBody"></tbody>
+        </table>
       </div>
-    </section>
+    </div>
+    <div class="smallNote" id="hitNote"></div>
+  </section>
 
-    <section id="settings" class="section">
-      <div class="card">
-        <h2>設定</h2>
-        <div class="form-grid">
-          <div><label>1,000円あたりの貸し枚数</label><input type="number" id="rate" value="50"></div>
-          <div><label>期待機械割</label><input type="number" step="0.01" id="expectedPayout" value="102.0"></div>
-          <div><label>目標ゲーム数</label><input type="number" id="targetGames" value="3000"></div>
-          <div><label>注意するRBミス回数</label><input type="number" id="missAlert" value="2"></div>
-        </div>
-        <div class="actions">
-          <button class="btn primary" onclick="saveSettings()">設定保存</button>
-          <button class="btn red" onclick="resetAllData()">全データ削除</button>
-        </div>
-        <div class="noteBox">期待差枚は「ゲーム数 × 3枚 × (期待機械割 - 100%)」の簡易目安です。機種や打ち方に合わせて期待機械割を変更してください。</div>
+  <section class="card">
+    <h2 style="margin-top:0">エクスポート / バックアップ</h2>
+    <div class="formGrid" style="grid-template-columns:220px auto;align-items:end;margin-bottom:14px">
+      <div>
+        <label>1,000円あたりの貸し枚数</label>
+        <input type="number" id="rateInput" value="46" oninput="saveSettings()">
       </div>
-    </section>
-  </main>
+      <div class="smallNote">現金投資は円で入力し、差枚計算では 1,000円 = 46枚 で自動換算します。</div>
+    </div>
+    <div class="backupGrid">
+      <button onclick="exportText()">MND出力（1ファイル）</button>
+      <button onclick="exportDayText()">MND出力（日別 連続DL）</button>
+      <button onclick="exportSelectedText()">選択行をMND出力（1ファイル）</button>
+      <button onclick="backupMonth()">表示中の月をバックアップ(JSON)</button>
+      <label class="fileBtn">JSON読み込み<input class="hidden" type="file" accept="application/json" onchange="restoreJSON(event)"></label>
+      <button onclick="exportRawMonth()">今月の生データ出力</button>
+      <button onclick="backupAll()">全期間をバックアップ(JSON)</button>
+      <button class="red" onclick="deleteSelected()">選択行を削除</button>
+      <label style="display:flex;align-items:center;gap:6px;margin-left:auto">
+        <input type="checkbox" id="replaceMode" style="width:auto;min-height:auto">置換モード（この月を書き替え）
+      </label>
+    </div>
+  </section>
+</div>
 
-  <div class="toast" id="toast">保存しました</div>
+<div class="toast" id="toast">保存しました</div>
 
-  <script>
-    const KEY='newHanabiRecordsV2';
-    const SETKEY='newHanabiSettingsV2';
-    let records=[];
-    let settings={rate:50,expectedPayout:102.0,targetGames:3000,missAlert:2};
+<script>
+const KEY='hanabi_form_v3_records';
+const SETKEY='hanabi_form_v3_settings';
+let records=[];
+let editId='';
+let currentHits={big:[],reg:[]};
+let currentMonth='';
+let graphMode='month';
+let settings={rate:46};
 
-    function yenToMedals(yen){return Math.round((Number(yen)||0)/1000*(Number(settings.rate)||50));}
-    function calcGames(r){
-      const manual=Number(r.games)||0;
-      if(manual>0)return manual;
-      return Math.max(0,(Number(r.endGame)||0)-(Number(r.startGame)||0));
+function today(){
+  const d=new Date();
+  return d.toISOString().slice(0,10);
+}
+function ymFromDate(date){
+  return (date||today()).slice(0,7);
+}
+function fmt(n){
+  return Number(n||0).toLocaleString('ja-JP');
+}
+function prob(g,n){
+  return g>0 && n>0 ? '1/'+(g/n).toFixed(2) : '-';
+}
+function saveSettings(){
+  const v=Number(document.getElementById('rateInput')?.value)||46;
+  settings.rate=v;
+  localStorage.setItem(SETKEY,JSON.stringify(settings));
+  updatePreview();
+  renderAll();
+}
+function cashToMedals(yen){
+  return Math.round((Number(yen)||0)/1000*(Number(settings.rate)||46));
+}
+function totalInvestMedalsOf(r){
+  return (Number(r.invest)||0)+cashToMedals(r.satsume);
+}
+function diffOf(r){return (Number(r.returnMedals)||0)-totalInvestMedalsOf(r)}
+function payoutOf(r){
+  const g=Number(r.games)||0;
+  if(!g)return 0;
+  return ((g*3+diffOf(r))/(g*3))*100;
+}
+function cls(n){
+  n=Number(n)||0;
+  return n>0?'plus':n<0?'minus':'';
+}
+function load(){
+  records=JSON.parse(localStorage.getItem(KEY)||'[]');
+  settings={...settings,...JSON.parse(localStorage.getItem(SETKEY)||'{}')};
+  const rateEl=document.getElementById('rateInput');
+  if(rateEl)rateEl.value=settings.rate||46;
+  const d=today();
+  document.getElementById('date').value=d;
+  currentMonth=ymFromDate(d);
+  document.getElementById('monthPicker').value=currentMonth;
+  updatePreview();
+  renderAll();
+}
+function saveLocal(){localStorage.setItem(KEY,JSON.stringify(records))}
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),1700);
+}
+function selectedMonthRecords(){
+  return records.filter(r=>ymFromDate(r.date)===currentMonth).sort((a,b)=>a.date.localeCompare(b.date)||a.createdAt.localeCompare(b.createdAt));
+}
+function graphRecords(){
+  const list=graphMode==='month'?selectedMonthRecords():[...records].sort((a,b)=>a.date.localeCompare(b.date)||a.createdAt.localeCompare(b.createdAt));
+  return list;
+}
+function updatePreview(){
+  const r=collect(false);
+  const d=diffOf(r);
+  const g=Number(r.games)||0;
+  setText('pvDiff',fmt(d));
+  setClass('pvDiff',cls(d));
+  setText('pvCashMedals',fmt(cashToMedals(r.satsume))+'枚');
+  setText('pvPayout',g?payoutOf(r).toFixed(2)+'%':'0.00%');
+  setText('pvBig',prob(g,r.big));
+  setText('pvReg',prob(g,r.reg));
+  setText('pvTotal',prob(g,(Number(r.big)||0)+(Number(r.reg)||0)));
+  setText('pvExpected',fmt(Math.round(g*3*0.02)));
+  setText('pvHits',fmt(currentHits.big.length+currentHits.reg.length)+'回');
+}
+function setText(id,v){document.getElementById(id).textContent=v}
+function setClass(id,c){document.getElementById(id).className='val '+c}
+function collect(withId=true){
+  return {
+    id:withId?(editId||'rec-'+Date.now()+'-'+Math.random().toString(16).slice(2)):'',
+    date:document.getElementById('date').value||today(),
+    invest:Number(document.getElementById('invest').value)||0,
+    returnMedals:Number(document.getElementById('returnMedals').value)||0,
+    games:Number(document.getElementById('games').value)||0,
+    big:Number(document.getElementById('big').value)||0,
+    reg:Number(document.getElementById('reg').value)||0,
+    regMiss:Number(document.getElementById('regMiss').value)||0,
+    satsume:Number(document.getElementById('satsume').value)||0,
+    memo:document.getElementById('memo').value.trim(),
+    hits:{big:[...currentHits.big],reg:[...currentHits.reg]},
+    createdAt:new Date().toISOString()
+  }
+}
+function saveRecord(){
+  const r=collect(true);
+  if(editId){
+    const idx=records.findIndex(x=>x.id===editId);
+    if(idx>=0)records[idx]={...records[idx],...r,id:editId,updatedAt:new Date().toISOString()};
+  }else{
+    records.push(r);
+  }
+  currentMonth=ymFromDate(r.date);
+  document.getElementById('monthPicker').value=currentMonth;
+  saveLocal();
+  resetForm();
+  renderAll();
+  toast(editId?'更新しました':'追加しました');
+}
+function resetForm(){
+  editId='';
+  document.getElementById('date').value=today();
+  ['invest','returnMedals','games','big','reg','regMiss','satsume'].forEach(id=>document.getElementById(id).value=0);
+  document.getElementById('memo').value='';
+  currentHits={big:[],reg:[]};
+  renderHitChips();
+  updatePreview();
+}
+function editRecord(id){
+  const r=records.find(x=>x.id===id);
+  if(!r)return;
+  editId=id;
+  document.getElementById('date').value=r.date||today();
+  document.getElementById('invest').value=r.invest||0;
+  document.getElementById('returnMedals').value=r.returnMedals||0;
+  document.getElementById('games').value=r.games||0;
+  document.getElementById('big').value=r.big||0;
+  document.getElementById('reg').value=r.reg||0;
+  document.getElementById('regMiss').value=r.regMiss||0;
+  document.getElementById('satsume').value=r.satsume||0;
+  document.getElementById('memo').value=r.memo||'';
+  currentHits=normalizeHits(r.hits);
+  renderHitChips();
+  updatePreview();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function deleteRecord(id){
+  if(!confirm('この行を削除しますか？'))return;
+  records=records.filter(x=>x.id!==id);
+  saveLocal();
+  renderAll();
+  toast('削除しました');
+}
+function normalizeHits(hits){
+  if(Array.isArray(hits))return {big:[...hits],reg:[]};
+  return {
+    big:Array.isArray(hits?.big)?[...hits.big]:[],
+    reg:Array.isArray(hits?.reg)?[...hits.reg]:[]
+  };
+}
+function setHit(v){
+  document.getElementById('hitGame').value=v;
+  document.getElementById('hitGame').focus();
+}
+function addHit(type){
+  const el=document.getElementById('hitGame');
+  const v=Number(el.value)||0;
+  if(v<=0){alert('当たった回転数を入力してください。');return}
+  if(type!=='big'&&type!=='reg')type='big';
+  currentHits[type].push(v);
+  if(type==='big')document.getElementById('big').value=(Number(document.getElementById('big').value)||0)+1;
+  if(type==='reg')document.getElementById('reg').value=(Number(document.getElementById('reg').value)||0)+1;
+  el.value='';
+  renderHitChips();
+  updatePreview();
+}
+function removeHit(type,i){
+  if(type!=='big'&&type!=='reg')return;
+  currentHits[type].splice(i,1);
+  if(type==='big')document.getElementById('big').value=Math.max(0,(Number(document.getElementById('big').value)||0)-1);
+  if(type==='reg')document.getElementById('reg').value=Math.max(0,(Number(document.getElementById('reg').value)||0)-1);
+  renderHitChips();
+  updatePreview();
+}
+function clearHits(){
+  if((currentHits.big.length+currentHits.reg.length)&&!confirm('当たり回転数を消しますか？'))return;
+  currentHits={big:[],reg:[]};
+  document.getElementById('big').value=0;
+  document.getElementById('reg').value=0;
+  renderHitChips();
+  updatePreview();
+}
+function renderHitChips(){
+  const chips=[
+    ...currentHits.big.map((v,i)=>`<span class="chip big">BIG ${fmt(v)}G <button onclick="removeHit('big',${i})">×</button></span>`),
+    ...currentHits.reg.map((v,i)=>`<span class="chip reg">REG ${fmt(v)}G <button onclick="removeHit('reg',${i})">×</button></span>`)
+  ];
+  document.getElementById('hitChips').innerHTML=chips.join('')||'<span class="smallNote">まだ当たり回転数はありません。</span>';
+}
+function sum(list){
+  return list.reduce((a,r)=>{
+    a.invest+=totalInvestMedalsOf(r);
+    a.cashYen+=(Number(r.satsume)||0);
+    a.medalInvest+=(Number(r.invest)||0);
+    a.returnMedals+=Number(r.returnMedals)||0;
+    a.diff+=diffOf(r);
+    a.games+=Number(r.games)||0;
+    a.big+=Number(r.big)||0;
+    a.reg+=Number(r.reg)||0;
+    a.miss+=Number(r.regMiss)||0;
+    a.satsume+=Number(r.satsume)||0;
+    const h=normalizeHits(r.hits);
+    a.hits+=h.big.length+h.reg.length;
+    return a;
+  },{invest:0,medalInvest:0,cashYen:0,returnMedals:0,diff:0,games:0,big:0,reg:0,miss:0,satsume:0,hits:0});
+}
+function renderTable(){
+  const list=selectedMonthRecords();
+  const body=document.getElementById('recordBody');
+  body.innerHTML=list.map(r=>{
+    const g=Number(r.games)||0;
+    const d=diffOf(r);
+    const p=g?payoutOf(r).toFixed(2):'0.00';
+    const h=normalizeHits(r.hits);
+    return `<tr>
+      <td><input type="checkbox" class="rowCheck" value="${r.id}"></td>
+      <td>${r.date}</td>
+      <td>${fmt(r.invest)}</td>
+      <td>${fmt(r.returnMedals)}</td>
+      <td class="${cls(d)}">${fmt(d)}</td>
+      <td>${fmt(g)}</td>
+      <td>${p}</td>
+      <td>${fmt(r.big)}</td>
+      <td>${fmt(r.reg)}</td>
+      <td>${prob(g,r.big)}</td>
+      <td>${prob(g,r.reg)}</td>
+      <td>${prob(g,(Number(r.big)||0)+(Number(r.reg)||0))}</td>
+      <td class="${r.regMiss>0?'warn':''}">${fmt(r.regMiss)}</td>
+      <td class="${r.satsume>0?'warn':''}">${fmt(r.satsume)}</td>
+      <td>${fmt(h.big.length+h.reg.length)}</td>
+      <td><button class="linkBtn edit" onclick="editRecord('${r.id}')">編集</button> <button class="linkBtn del" onclick="deleteRecord('${r.id}')">削除</button></td>
+    </tr>`
+  }).join('')||'<tr><td colspan="16">この月の記録はありません。</td></tr>';
+  const s=sum(list);
+  document.getElementById('recordFoot').innerHTML=`<tr>
+    <td></td><td>合計</td><td>${fmt(s.medalInvest)}</td><td>${fmt(s.returnMedals)}</td><td class="${cls(s.diff)}">${fmt(s.diff)}</td><td>${fmt(s.games)}</td>
+    <td>${s.games?((s.games*3+s.diff)/(s.games*3)*100).toFixed(2):'0.00'}</td>
+    <td>${fmt(s.big)}</td><td>${fmt(s.reg)}</td><td>${prob(s.games,s.big)}</td><td>${prob(s.games,s.reg)}</td><td>${prob(s.games,s.big+s.reg)}</td>
+    <td class="warn">${fmt(s.miss)}</td><td class="warn">${fmt(s.satsume)}</td><td>${fmt(s.hits)}</td><td></td>
+  </tr>`;
+}
+function fillSummary(prefix,list){
+  const s=sum(list);
+  setText(prefix+'Invest',fmt(s.invest));
+  setText(prefix+'Return',fmt(s.returnMedals));
+  setText(prefix+'Diff',fmt(s.diff));
+  document.getElementById(prefix+'Diff').className=cls(s.diff);
+  setText(prefix+'Games',fmt(s.games));
+  setText(prefix+'Payout',s.games?((s.games*3+s.diff)/(s.games*3)*100).toFixed(2)+'%':'0.00%');
+  setText(prefix+'Big',fmt(s.big));
+  setText(prefix+'Reg',fmt(s.reg));
+  setText(prefix+'Miss',fmt(s.miss));
+  setText(prefix+'Satsume',fmt(s.satsume)+'円');
+  setText(prefix+'BigProb',prob(s.games,s.big));
+  setText(prefix+'RegProb',prob(s.games,s.reg));
+  setText(prefix+'TotalProb',prob(s.games,s.big+s.reg));
+}
+function renderSummary(){
+  setText('monthLabel',currentMonth.replace('-','.'));
+  fillSummary('m',selectedMonthRecords());
+  fillSummary('a',[...records]);
+}
+function renderChart(){
+  const list=graphRecords();
+  const box=document.getElementById('chartBox');
+  const title=graphMode==='month' ? `対象：${currentMonth}` : '対象：全期間';
+  setText('graphMonth',title);
+  document.getElementById('graphMonthBtn').classList.toggle('active',graphMode==='month');
+  document.getElementById('graphAllBtn').classList.toggle('active',graphMode==='all');
+  const s=sum(list);
+  setText('graphDiff',fmt(s.diff));
+  document.getElementById('graphDiff').className=(Number(s.diff)>=0?'graphDiffPositive':'graphDiffNegative');
+  if(!list.length){
+    box.innerHTML='<div class="smallNote" style="color:#e5e7eb">グラフ表示できる記録がありません。</div>';
+    return;
+  }
+  let cum=0,cumG=0;
+  const vals=[];
+  list.forEach(r=>{
+    const g=Number(r.games)||0;
+    if(g<=0)return;
+    cum+=diffOf(r);
+    cumG+=g;
+    vals.push({
+      x:cumG,
+      cum,
+      date:r.date,
+      expected:Math.round(cumG*3*0.02),
+      breakEven:0
+    });
+  });
+  if(!vals.length){
+    box.innerHTML='<div class="smallNote" style="color:#e5e7eb">G数が入力されていないため、グラフ表示できません。</div>';
+    return;
+  }
+  const w=Math.max(940, vals.length*62 + 120), h=390;
+  const left=72, right=22, top=26, bottom=92;
+  const maxG=vals[vals.length-1].x||1;
+
+  let minVal=Math.min(0, ...vals.map(v=>Math.min(v.cum, v.expected)));
+  let maxVal=Math.max(0, ...vals.map(v=>Math.max(v.cum, v.expected)));
+  const spanRaw=maxVal-minVal || 1;
+  const padVal=Math.max(2000, Math.ceil(spanRaw*0.08/1000)*1000);
+  minVal = Math.floor((minVal-padVal)/1000)*1000;
+  maxVal = Math.ceil((maxVal+padVal)/1000)*1000;
+  const span=maxVal-minVal || 1;
+
+  const x=g=>left+(g/maxG)*(w-left-right);
+  const y=v=>h-bottom-((v-minVal)/span)*(h-top-bottom);
+
+  // horizontal grid values: 10 segments
+  const gridCount=10;
+  const gridVals=[];
+  for(let i=0;i<=gridCount;i++){
+    gridVals.push(minVal + (span/gridCount)*i);
+  }
+
+  const grids = gridVals.map((gv, idx)=>{
+    const yy=y(gv);
+    const color = Math.abs(gv) < 1 ? '#d1d5db' : '#3b82f6';
+    const opacity = Math.abs(gv) < 1 ? 0.8 : 0.45;
+    return `<line x1="${left}" y1="${yy}" x2="${w-right}" y2="${yy}" stroke="${color}" stroke-width="${Math.abs(gv) < 1 ? 2 : 1}" stroke-dasharray="2 4" opacity="${opacity}"></line>
+            <text x="${left-10}" y="${yy+4}" font-size="12" text-anchor="end" fill="#f3f4f6" font-weight="700">${gv < 0 ? '▲ ' + fmt(Math.abs(Math.round(gv))) : fmt(Math.round(gv))}</text>`;
+  }).join('');
+
+  const lineCum = vals.map((v,i)=>`${i?'L':'M'}${x(v.x)},${y(v.cum)}`).join(' ');
+  const lineExp = vals.map((v,i)=>`${i?'L':'M'}${x(v.x)},${y(v.expected)}`).join(' ');
+  const lineZero = `M${left},${y(0)} L${w-right},${y(0)}`;
+
+  const points = vals.map(v=>`<circle cx="${x(v.x)}" cy="${y(v.cum)}" r="3" fill="#60a5fa"><title>${v.date} / ${fmt(v.x)}G / ${fmt(v.cum)}枚</title></circle>`).join('');
+
+  const labelStep=Math.max(1, Math.ceil(vals.length/18));
+  const xLabels = vals.map((v,i)=>{
+    if(i!==0 && i!==vals.length-1 && i%labelStep!==0) return '';
+    const xx=x(v.x);
+    return `<text x="${xx}" y="${h-bottom+18}" font-size="11" fill="#f3f4f6" text-anchor="end" transform="rotate(-90 ${xx} ${h-bottom+18})">${fmt(v.x)}</text>`;
+  }).join('');
+
+  box.innerHTML=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="差枚数グラフ">
+    ${grids}
+    <path d="${lineZero}" fill="none" stroke="#bdbdbd" stroke-width="3" stroke-linecap="round"></path>
+    <path d="${lineExp}" fill="none" stroke="#fb923c" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"></path>
+    <path d="${lineCum}" fill="none" stroke="#60a5fa" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"></path>
+    ${points}
+    ${xLabels}
+  </svg>`;
+}
+function renderHitAnalysis(){
+  const type=document.getElementById('hitType').value;
+  const bucket=Number(document.getElementById('hitBucket').value)||100;
+  const rows=[];
+  selectedMonthRecords().forEach(r=>{
+    const h=normalizeHits(r.hits);
+    ['big','reg'].forEach(t=>{
+      if(type!=='all'&&type!==t)return;
+      h[t].forEach(g=>rows.push({date:r.date,type:t,game:Number(g)||0,memo:r.memo||''}));
+    });
+  });
+  rows.sort((a,b)=>a.game-b.game);
+  const total=rows.length;
+  const body=document.getElementById('distBody');
+  const raw=document.getElementById('hitRawBody');
+  if(!total){
+    body.innerHTML='<tr><td colspan="4">当たり回転数の記録がありません。</td></tr>';
+    raw.innerHTML='<tr><td colspan="4">当たり回転数の記録がありません。</td></tr>';
+    setText('hitNote','当たり回転数を入力して保存すると、ここに集計されます。');
+    return;
+  }
+  const max=Math.max(...rows.map(r=>r.game));
+  const bucketMax=Math.ceil(max/bucket)*bucket;
+  const counts=[];
+  for(let start=1;start<=bucketMax;start+=bucket){
+    const end=start+bucket-1;
+    counts.push({start,end,count:rows.filter(r=>r.game>=start&&r.game<=end).length});
+  }
+  const top=Math.max(...counts.map(c=>c.count),1);
+  body.innerHTML=counts.map(c=>{
+    const pct=c.count/total*100;
+    return `<tr><td>${fmt(c.start)}〜${fmt(c.end)}</td><td>${fmt(c.count)}</td><td>${pct.toFixed(1)}%</td><td><span class="bar" style="width:${Math.max(2,Math.round(c.count/top*100))}%"></span></td></tr>`
+  }).join('');
+  raw.innerHTML=rows.map(r=>`<tr><td>${r.date}</td><td>${r.type==='big'?'BIG':'REG'}</td><td>${fmt(r.game)}G</td><td>${escapeHtml(r.memo)}</td></tr>`).join('');
+  const u100=rows.filter(r=>r.game<=100).length;
+  const u200=rows.filter(r=>r.game<=200).length;
+  setText('hitNote',`100G以内：${fmt(u100)}回（${(u100/total*100).toFixed(1)}%） / 200G以内：${fmt(u200)}回（${(u200/total*100).toFixed(1)}%）`);
+}
+function renderAll(){
+  renderTable();
+  renderSummary();
+  renderChart();
+  renderHitAnalysis();
+}
+function setMonthFromPicker(){
+  currentMonth=document.getElementById('monthPicker').value||currentMonth;
+  renderAll();
+}
+function moveMonth(delta){
+  const [y,m]=currentMonth.split('-').map(Number);
+  const d=new Date(y,m-1+delta,1);
+  currentMonth=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('monthPicker').value=currentMonth;
+  renderAll();
+}
+function setGraphMode(mode){
+  graphMode=mode;
+  renderChart();
+}
+function toggleAllChecks(el){
+  document.querySelectorAll('.rowCheck').forEach(c=>c.checked=el.checked);
+}
+function selectedIds(){
+  return [...document.querySelectorAll('.rowCheck:checked')].map(x=>x.value);
+}
+function deleteSelected(){
+  const ids=selectedIds();
+  if(!ids.length){alert('削除する行を選択してください。');return}
+  if(!confirm(`${ids.length}件を削除しますか？`))return;
+  records=records.filter(r=>!ids.includes(r.id));
+  saveLocal();
+  renderAll();
+  toast('選択行を削除しました');
+}
+function exportCSV(){
+  const list=selectedMonthRecords();
+  const header=['date','medalInvest','returnMedals','diff','games','payout','big','reg','bigProb','regProb','totalProb','regMiss','cashYen','memo','bigHits','regHits'];
+  const lines=[header.join(',')];
+  list.forEach(r=>{
+    const g=Number(r.games)||0,h=normalizeHits(r.hits);
+    const row=[
+      r.date,r.invest,r.returnMedals,diffOf(r),g,g?payoutOf(r).toFixed(2):'0.00',r.big,r.reg,prob(g,r.big),prob(g,r.reg),prob(g,(Number(r.big)||0)+(Number(r.reg)||0)),r.regMiss,r.satsume,r.memo,
+      h.big.join('|'),h.reg.join('|')
+    ].map(csvCell);
+    lines.push(row.join(','));
+  });
+  download(`hanabi_${currentMonth}.csv`,lines.join('\n'),'text/csv');
+}
+function csvCell(v){
+  v=String(v??'');
+  return `"${v.replace(/"/g,'""')}"`;
+}
+function importCSV(e){
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const text=reader.result;
+    const lines=text.split(/\r?\n/).filter(Boolean);
+    if(lines.length<2){alert('CSVにデータがありません。');return}
+    const imported=[];
+    lines.slice(1).forEach(line=>{
+      const cols=parseCSV(line);
+      if(cols.length<8)return;
+      imported.push({
+        id:'rec-'+Date.now()+'-'+Math.random().toString(16).slice(2),
+        date:cols[0]||today(),
+        invest:Number(cols[1])||0,
+        returnMedals:Number(cols[2])||0,
+        games:Number(cols[4])||0,
+        big:Number(cols[6])||0,
+        reg:Number(cols[7])||0,
+        regMiss:Number(cols[11])||0,
+        satsume:Number(cols[12])||0,
+        memo:cols[13]||'',
+        hits:{big:(cols[14]||'').split('|').filter(Boolean).map(Number),reg:(cols[15]||'').split('|').filter(Boolean).map(Number)},
+        createdAt:new Date().toISOString()
+      });
+    });
+    if(document.getElementById('replaceMode').checked){
+      records=records.filter(r=>ymFromDate(r.date)!==currentMonth).concat(imported);
+    }else{
+      records=records.concat(imported);
     }
-    function calcDiff(r){return (Number(r.medalOut)||0)-yenToMedals(r.cash)-(Number(r.medalIn)||0);}
-    function payout(r){
-      const g=calcGames(r); if(!g)return 0;
-      return ((g*3+calcDiff(r))/(g*3))*100;
-    }
-    function probability(g,n){return n>0&&g>0?'1/'+Math.round(g/n):'-';}
-    function cls(n){return n>0?'plus':n<0?'minus':'zero';}
-    function fmt(n){return Number(n||0).toLocaleString('ja-JP');}
-    function today(){return new Date().toISOString().slice(0,10);}
-    function monthStart(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;}
-    function load(){
-      records=JSON.parse(localStorage.getItem(KEY)||'[]');
-      settings={...settings,...JSON.parse(localStorage.getItem(SETKEY)||'{}')};
-      document.getElementById('rate').value=settings.rate;
-      document.getElementById('expectedPayout').value=settings.expectedPayout;
-      document.getElementById('targetGames').value=settings.targetGames;
-      document.getElementById('missAlert').value=settings.missAlert;
-      document.getElementById('date').value=today();
-      if(!document.getElementById('filterFrom').value){setThisMonth(false)}
-      bindLiveInputs();
-      renderAll();
-      quickCalc();
-      updateLiveStats();
-    }
-    function saveLocal(){localStorage.setItem(KEY,JSON.stringify(records));}
-    function showToast(msg='保存しました'){
-      const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
-      setTimeout(()=>t.classList.remove('show'),1800);
-    }
-    function showTab(id,btn){
-      document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-      document.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('active'));
-      if(btn)btn.classList.add('active');
-      if(id==='history')renderHistory();
-      if(id==='input')updateLiveStats();
-    }
-    function collectForm(){
-      const r={
-        id:document.getElementById('editId').value||('hanabi-'+Date.now()),
-        date:document.getElementById('date').value||today(),
-        shop:document.getElementById('shop').value.trim(),
-        machine:document.getElementById('machine').value.trim(),
-        startGame:Number(document.getElementById('startGame').value)||0,
-        endGame:Number(document.getElementById('endGame').value)||0,
-        games:Number(document.getElementById('games').value)||0,
-        big:Number(document.getElementById('big').value)||0,
-        reg:Number(document.getElementById('reg').value)||0,
-        rbMiss:Number(document.getElementById('rbMiss').value)||0,
-        cash:Number(document.getElementById('cash').value)||0,
-        medalIn:Number(document.getElementById('medalIn').value)||0,
-        medalOut:Number(document.getElementById('medalOut').value)||0,
-        memo:document.getElementById('memo').value.trim(),
-        updatedAt:new Date().toISOString()
-      };
-      r.games=calcGames(r);
-      return r;
-    }
-    function saveRecord(){
-      const r=collectForm();
-      const i=records.findIndex(x=>x.id===r.id);
-      if(i>=0)records[i]=r; else records.push(r);
+    saveLocal();
+    renderAll();
+    toast('CSVを取り込みました');
+  };
+  reader.readAsText(file);
+}
+</script>
+<script>
+function parseCSV(line){
+  const out=[]; let cur='',q=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'&&line[i+1]==='"'){cur+='"';i++;continue}
+    if(c==='"'){q=!q;continue}
+    if(c===','&&!q){out.push(cur);cur='';continue}
+    cur+=c;
+  }
+  out.push(cur);
+  return out;
+}
+function backupMonth(){
+  const data={app:'hanabi_form_v3',month:currentMonth,settings,records:selectedMonthRecords(),exportedAt:new Date().toISOString()};
+  download(`hanabi_backup_${currentMonth}.json`,JSON.stringify(data,null,2),'application/json');
+}
+function backupAll(){
+  const data={app:'hanabi_form_v3',settings,records,exportedAt:new Date().toISOString()};
+  download(`hanabi_backup_all.json`,JSON.stringify(data,null,2),'application/json');
+}
+function restoreJSON(e){
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const data=JSON.parse(reader.result);
+      const list=Array.isArray(data.records)?data.records:[];
+      if(data.settings){settings={...settings,...data.settings};localStorage.setItem(SETKEY,JSON.stringify(settings));const rateEl=document.getElementById('rateInput');if(rateEl)rateEl.value=settings.rate||46;}
+      if(!list.length){alert('読み込む記録がありません。');return}
+      if(document.getElementById('replaceMode').checked){
+        const months=new Set(list.map(r=>ymFromDate(r.date)));
+        records=records.filter(r=>!months.has(ymFromDate(r.date))).concat(list);
+      }else{
+        records=records.concat(list.map(r=>({...r,id:r.id||'rec-'+Date.now()+'-'+Math.random().toString(16).slice(2)})));
+      }
       saveLocal();
-      clearForm(false);
       renderAll();
-      renderHistory();
-      showToast('記録を保存しました');
-    }
-    function clearForm(resetDate=true){
-      document.getElementById('editId').value='';
-      ['shop','machine','memo'].forEach(id=>document.getElementById(id).value='');
-      ['startGame','endGame','games','big','reg','rbMiss','cash','medalIn','medalOut'].forEach(id=>document.getElementById(id).value=0);
-      if(resetDate)document.getElementById('date').value=today();
-      updateLiveStats();
-    }
-    function editRecord(id){
-      const r=records.find(x=>x.id===id); if(!r)return;
-      ['id','date','shop','machine','startGame','endGame','games','big','reg','rbMiss','cash','medalIn','medalOut','memo'].forEach(k=>{
-        const el=document.getElementById(k==='id'?'editId':k); if(el)el.value=r[k]??'';
-      });
-      document.querySelectorAll('.tabbtn')[1].click();
-      updateLiveStats();
-    }
-    function deleteRecord(id){
-      if(!confirm('この記録を削除しますか？'))return;
-      records=records.filter(x=>x.id!==id);
-      saveLocal(); renderAll(); renderHistory(); showToast('削除しました');
-    }
-    function filteredRecords(){
-      const from=document.getElementById('filterFrom').value;
-      const to=document.getElementById('filterTo').value;
-      const kw=document.getElementById('filterKeyword').value.trim().toLowerCase();
-      return records.filter(r=>{
-        if(from&&r.date<from)return false;
-        if(to&&r.date>to)return false;
-        if(kw){
-          const s=[r.shop,r.machine,r.memo].join(' ').toLowerCase();
-          if(!s.includes(kw))return false;
-        }
-        return true;
-      });
-    }
-    function summarize(list){
-      const total=list.reduce((a,r)=>{
-        const g=calcGames(r), d=calcDiff(r);
-        a.games+=g; a.big+=Number(r.big)||0; a.reg+=Number(r.reg)||0; a.diff+=d; a.rbMiss+=Number(r.rbMiss)||0; a.cash+=Number(r.cash)||0; a.medalIn+=Number(r.medalIn)||0; a.medalOut+=Number(r.medalOut)||0;
-        return a;
-      },{games:0,big:0,reg:0,diff:0,rbMiss:0,cash:0,medalIn:0,medalOut:0});
-      total.payout=total.games?((total.games*3+total.diff)/(total.games*3))*100:0;
-      total.expected=Math.round(total.games*3*((Number(settings.expectedPayout)||100)-100)/100);
-      return total;
-    }
-    function renderStats(){
-      const s=summarize(filteredRecords());
-      const stats=[
-        ['総ゲーム',fmt(s.games)+'G','zero'],
-        ['累計差枚',fmt(s.diff)+'枚',cls(s.diff)],
-        ['機械割',s.games?s.payout.toFixed(2)+'%':'-','zero'],
-        ['期待差枚',fmt(s.expected)+'枚',cls(s.expected)],
-        ['BIG確率',probability(s.games,s.big),'zero'],
-        ['REG確率',probability(s.games,s.reg),'zero'],
-        ['合算',probability(s.games,s.big+s.reg),'zero'],
-        ['RBミス',fmt(s.rbMiss)+'回',s.rbMiss>=settings.missAlert?'plus':'zero']
-      ];
-      document.getElementById('stats').innerHTML=stats.map(x=>`<div class="stat"><div class="label">${x[0]}</div><div class="value ${x[2]}">${x[1]}</div></div>`).join('');
-      let msg='';
-      if(!filteredRecords().length)msg='まだ記録がありません。記録入力から今日のデータを保存してください。';
-      else if(s.diff>0)msg=`プラス域です。累計差枚は ${fmt(s.diff)}枚。期待差枚との差も見ながら、無理な追いかけを避けるのが安全です。`;
-      else msg=`現在は ${fmt(s.diff)}枚。BIG/REG確率とRBミス回数を見て、粘る根拠が弱い時は早めに切る判断もできます。`;
-      document.getElementById('adviceBox').textContent=msg;
-    }
-    function renderChart(){
-      const list=[...filteredRecords()].sort((a,b)=>(a.date||'').localeCompare(b.date||'') || (Number(a.startGame)||0)-(Number(b.startGame)||0));
-      const vals=[];
-      let cum=0;
-      let cumGames=0;
-      list.forEach(r=>{
-        const g=calcGames(r);
-        if(g<=0)return;
-        cum += calcDiff(r);
-        cumGames += g;
-        const expected = Math.round(cumGames * 3 * 0.02);
-        vals.push({date:r.date,diff:calcDiff(r),cum,games:g,cumGames,expected,shop:r.shop,machine:r.machine});
-      });
-      const w=Math.max(760,vals.length*64+100), h=320, pad=46;
-      if(!vals.length){document.getElementById('chartBox').innerHTML='<div class="mini">グラフ表示できる記録がありません。総ゲーム数または開始G・終了Gを入力してください。</div>';return;}
-      const all=vals.flatMap(v=>[v.diff,v.cum,v.expected,0]);
-      const min=Math.min(...all), max=Math.max(...all); const span=Math.max(1,max-min);
-      const maxGame=Math.max(1,vals[vals.length-1].cumGames);
-      const y=v=>h-pad-((v-min)/span)*(h-pad*2);
-      const xByGame=g=>pad+(g/maxGame)*(w-pad*2);
-      const x=i=>xByGame(vals[i].cumGames);
-      const diffLine=vals.map((v,i)=>`${i?'L':'M'}${x(i)},${y(v.diff)}`).join(' ');
-      const cumLine=vals.map((v,i)=>`${i?'L':'M'}${x(i)},${y(v.cum)}`).join(' ');
-      const expectedLine=`M${pad},${y(0)} L${xByGame(maxGame)},${y(Math.round(maxGame*3*0.02))}`;
-      const labelStep=Math.max(1,Math.ceil(vals.length/8));
-      const labels=vals.map((v,i)=>{
-        if(i!==0 && i!==vals.length-1 && i%labelStep!==0)return '';
-        return `<text x="${x(i)}" y="${h-12}" text-anchor="middle" font-size="10" fill="#64748b">${fmt(v.cumGames)}G</text>`;
-      }).join('');
-      const diffPoints=vals.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v.diff)}" r="4" fill="#2563eb"><title>${v.date} 区間 ${fmt(v.games)}G / 差枚 ${fmt(v.diff)}枚</title></circle>`).join('');
-      const cumPoints=vals.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v.cum)}" r="4" fill="#16a34a"><title>${v.date} 累計 ${fmt(v.cumGames)}G / 累計 ${fmt(v.cum)}枚</title></circle>`).join('');
-      const expectedLabelX = xByGame(maxGame);
-      const expectedLabelY = y(Math.round(maxGame*3*0.02));
-      document.getElementById('chartBox').innerHTML=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="累計回転数ごとの差枚と102%ラインの折れ線グラフ">
-        <line x1="${pad}" y1="${y(0)}" x2="${w-pad}" y2="${y(0)}" stroke="#94a3b8" stroke-dasharray="4 4"></line>
-        <text x="8" y="${y(max)+4}" font-size="11" fill="#64748b">${fmt(max)}</text>
-        <text x="8" y="${y(min)+4}" font-size="11" fill="#64748b">${fmt(min)}</text>
-        <text x="${w-pad}" y="${h-30}" text-anchor="end" font-size="11" fill="#64748b">累計回転数</text>
-        <path d="${expectedLine}" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="8 6" stroke-linecap="round" stroke-linejoin="round"></path>
-        <path d="${diffLine}" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
-        <path d="${cumLine}" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
-        <text x="${Math.min(w-pad-6, expectedLabelX+8)}" y="${Math.max(16, expectedLabelY-8)}" font-size="11" fill="#b45309">102%ライン</text>
-        ${diffPoints}${cumPoints}${labels}
-      </svg>`;
-    }
-    function renderHistory(){
-      const kw=(document.getElementById('historySearch')?.value||'').trim().toLowerCase();
-      let list=records.filter(r=>!kw||[r.date,r.shop,r.machine,r.memo].join(' ').toLowerCase().includes(kw));
-      const mode=document.getElementById('sortMode')?.value||'dateDesc';
-      list.sort((a,b)=>{
-        if(mode==='dateAsc')return a.date.localeCompare(b.date);
-        if(mode==='diffDesc')return calcDiff(b)-calcDiff(a);
-        if(mode==='diffAsc')return calcDiff(a)-calcDiff(b);
-        return b.date.localeCompare(a.date);
-      });
-      const lim=document.getElementById('limitMode')?.value||'all'; if(lim!=='all')list=list.slice(0,Number(lim));
-      document.getElementById('historyBody').innerHTML=list.map(r=>{
-        const g=calcGames(r), d=calcDiff(r), p=payout(r);
-        return `<tr>
-          <td>${r.date}</td><td>${escapeHtml(r.shop||'-')}<br><span class="mini">${escapeHtml(r.machine||'-')}</span></td><td>${fmt(g)}G</td><td>${r.big}<br><span class="mini">${probability(g,r.big)}</span></td><td>${r.reg}<br><span class="mini">${probability(g,r.reg)}</span></td><td class="${cls(d)}">${fmt(d)}枚</td><td>${g?p.toFixed(2)+'%':'-'}</td><td><div class="row-actions"><button class="smallbtn edit" onclick="editRecord('${r.id}')">編集</button><button class="smallbtn del" onclick="deleteRecord('${r.id}')">削除</button></div></td>
-        </tr>`;
-      }).join('')||'<tr><td colspan="8">記録がありません。</td></tr>';
-    }
-    function renderAll(){renderStats();renderChart();renderHistory();}
-    function setThisMonth(doRender=true){document.getElementById('filterFrom').value=monthStart();document.getElementById('filterTo').value=today();if(doRender)renderAll();}
-    function setAllRange(){document.getElementById('filterFrom').value='';document.getElementById('filterTo').value='';renderAll();}
-    function quickCalc(){
-      const r={cash:Number(document.getElementById('cashCalc').value)||0,medalIn:Number(document.getElementById('medalCalc').value)||0,medalOut:Number(document.getElementById('returnCalc').value)||0};
-      const d=calcDiff(r); const el=document.getElementById('quickResult'); el.textContent=fmt(d)+'枚'; el.className='value '+cls(d);
-    }
-    function updateLiveStats(){
-      const r=collectForm(); const g=calcGames(r), d=calcDiff(r), p=payout(r);
-      const items=[['G数',fmt(g)+'G','zero'],['差枚',fmt(d)+'枚',cls(d)],['機械割',g?p.toFixed(2)+'%':'-','zero'],['合算',probability(g,(Number(r.big)||0)+(Number(r.reg)||0)),'zero']];
-      document.getElementById('liveStats').innerHTML=items.map(x=>`<div class="stat"><div class="label">${x[0]}</div><div class="value ${x[2]}">${x[1]}</div></div>`).join('');
-    }
-    function bindLiveInputs(){
-      ['startGame','endGame','games','big','reg','rbMiss','cash','medalIn','medalOut'].forEach(id=>document.getElementById(id).addEventListener('input',updateLiveStats));
-    }
-    function saveSettings(){
-      settings.rate=Number(document.getElementById('rate').value)||50;
-      settings.expectedPayout=Number(document.getElementById('expectedPayout').value)||100;
-      settings.targetGames=Number(document.getElementById('targetGames').value)||3000;
-      settings.missAlert=Number(document.getElementById('missAlert').value)||2;
-      localStorage.setItem(SETKEY,JSON.stringify(settings));
-      renderAll(); quickCalc(); updateLiveStats(); showToast('設定を保存しました');
-    }
-    function exportBackup(){
-      const data={app:'newHanabiV2',exportedAt:new Date().toISOString(),settings,records};
-      const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='new_hanabi_backup_'+today()+'.json'; a.click(); URL.revokeObjectURL(a.href);
-    }
-    function importBackup(e){
-      const file=e.target.files[0]; if(!file)return;
-      const reader=new FileReader();
-      reader.onload=()=>{
-        try{
-          const data=JSON.parse(reader.result);
-          if(!Array.isArray(data.records))throw new Error('records missing');
-          records=data.records; settings={...settings,...(data.settings||{})};
-          saveLocal(); localStorage.setItem(SETKEY,JSON.stringify(settings)); load(); showToast('復元しました');
-        }catch(err){alert('復元できませんでした。バックアップファイルを確認してください。')}
-      };
-      reader.readAsText(file);
-    }
-    function resetAllData(){
-      if(!confirm('全ての記録を削除します。よろしいですか？'))return;
-      records=[]; saveLocal(); renderAll(); showToast('全データを削除しました');
-    }
-    function escapeHtml(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
-    load();
-  </script>
+      toast('JSONを読み込みました');
+    }catch(err){alert('JSONを読み込めませんでした。')}
+  };
+  reader.readAsText(file);
+}
+function exportText(){
+  const text=selectedMonthRecords().map(formatText).join('\n\n');
+  download(`hanabi_${currentMonth}.txt`,text||'記録なし','text/plain');
+}
+function exportDayText(){
+  selectedMonthRecords().forEach(r=>download(`hanabi_${r.date}.txt`,formatText(r),'text/plain'));
+}
+function exportSelectedText(){
+  const ids=selectedIds();
+  const list=records.filter(r=>ids.includes(r.id));
+  if(!list.length){alert('出力する行を選択してください。');return}
+  download(`hanabi_selected_${currentMonth}.txt`,list.map(formatText).join('\n\n'),'text/plain');
+}
+function exportRawMonth(){
+  download(`hanabi_raw_${currentMonth}.json`,JSON.stringify(selectedMonthRecords(),null,2),'application/json');
+}
+function formatText(r){
+  const g=Number(r.games)||0,h=normalizeHits(r.hits);
+  return [
+    `日付：${r.date}`,
+    `持ちメダル投資：${fmt(r.invest)}枚`,
+    `現金投資：${fmt(r.satsume)}円（${fmt(cashToMedals(r.satsume))}枚換算）`,
+    `回収：${fmt(r.returnMedals)}枚`,
+    `差枚：${fmt(diffOf(r))}枚`,
+    `G数：${fmt(g)}G`,
+    `機械割：${g?payoutOf(r).toFixed(2):'0.00'}%`,
+    `BIG：${r.big}（${prob(g,r.big)}）`,
+    `REG：${r.reg}（${prob(g,r.reg)}）`,
+    `合算：${prob(g,(Number(r.big)||0)+(Number(r.reg)||0))}`,
+    `REG中失敗：${r.regMiss}`,
+    `現金投資：${fmt(r.satsume)}円（${fmt(cashToMedals(r.satsume))}枚換算）`,
+    `BIG当たり回転数：${h.big.join(', ')||'-'}`,
+    `REG当たり回転数：${h.reg.join(', ')||'-'}`,
+    `メモ：${r.memo||'-'}`
+  ].join('\n');
+}
+function download(name,content,type){
+  const blob=new Blob([content],{type:type+';charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function fillSample(){
+  document.getElementById('date').value=currentMonth+'-10';
+  document.getElementById('invest').value=460;
+  document.getElementById('returnMedals').value=1051;
+  document.getElementById('games').value=2328;
+  document.getElementById('big').value=11;
+  document.getElementById('reg').value=9;
+  document.getElementById('regMiss').value=2;
+  document.getElementById('satsume').value=0;
+  document.getElementById('memo').value='サンプル';
+  currentHits={big:[74,106,232,516],reg:[138,280,430]};
+  renderHitChips();
+  updatePreview();
+}
+function escapeHtml(s){
+  return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+load();
+</script>
 </body>
 </html>
