@@ -517,6 +517,61 @@ tfoot td{
   padding-right:6px;
 }
 
+
+.hitOnlyCard{
+  max-width:980px;
+  margin-left:auto;
+  margin-right:auto;
+  margin-bottom:12px;
+}
+.hitOnlyInput{
+  grid-template-columns:180px 1fr auto;
+}
+.hitOnlySectionTitle{
+  margin:0 0 10px;
+  font-size:20px;
+}
+.hitOnlyActions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.collapseBox{
+  margin:16px 0 22px;
+}
+.collapseBox > summary{
+  cursor:pointer;
+  list-style:none;
+  background:#ffffff;
+  border:2px solid #4b5563;
+  border-radius:16px;
+  padding:14px 18px;
+  font-size:18px;
+  font-weight:950;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.collapseBox > summary::-webkit-details-marker{display:none}
+.collapseBox > summary::after{
+  content:"開く";
+  font-size:13px;
+  background:#f3f4f6;
+  border:1px solid #d1d5db;
+  border-radius:999px;
+  padding:4px 12px;
+}
+.collapseBox[open] > summary::after{content:"閉じる"}
+.collapseBox .summaryBox,
+.collapseBox .card{
+  margin-top:10px;
+}
+
+@media(max-width:900px){
+  .hitOnlyInput{grid-template-columns:1fr}
+}
+
 @media(max-width:900px){
   .hitPageTop{grid-template-columns:1fr}
 }
@@ -547,7 +602,7 @@ tfoot td{
   <div class="header">
     <div>
       <h1>新ハナビ 収支フォーム</h1>
-      <div class="sub">入力→日別表→月間集計→差枚グラフ。BIG/REG別の当たり回転数は専用ページだけで管理できます。</div>
+      <div class="sub">入力と一覧を中心にしました。集計・グラフ・バックアップは必要な時だけ開けます。</div>
     </div>
     <div class="monthBox">
       <input type="month" id="monthPicker" onchange="setMonthFromPicker()" style="width:160px">
@@ -560,7 +615,84 @@ tfoot td{
 
   <div class="pageNav noPrint">
     <button id="mainPageBtn" class="active" onclick="showPage('mainPage')">収支ページ</button>
-    <button id="hitPageBtn" onclick="showPage('hitPage')">当たり回転数ページ</button>
+    <button id="hitPageBtn" onclick="showPage('hitPage')">当たり回転数</button>
+  </div>
+
+  <!-- 当たり回転数ページ：月間集計・グラフ・バックアップより上に配置 -->
+  <div id="hitPage" class="appPage">
+    <section class="card hitOnlyCard" style="margin-top:8px">
+      <div class="graphHead" style="margin-bottom:8px">
+        <h2 class="hitOnlySectionTitle">当たり回転数</h2>
+        <button onclick="showPage('mainPage')">収支ページへ戻る</button>
+      </div>
+
+      <div class="hitPagePanel" style="margin-bottom:0">
+        <div class="hitPageTop hitOnlyInput">
+          <div>
+            <label>日付</label>
+            <input type="date" id="hitPageDate" onchange="syncHitPageDateToMain()">
+          </div>
+          <div>
+            <label>当たった回転数</label>
+            <input type="number" id="hitGame" placeholder="例：87" onkeydown="if(event.key==='Enter'){event.preventDefault();addHit('big')}">
+          </div>
+          <div class="hitOnlyActions">
+            <button class="blue" onclick="addHit('big')">BIG追加</button>
+            <button class="orange" onclick="addHit('reg')">REG追加</button>
+            <button onclick="clearHits()">この日を全消し</button>
+          </div>
+        </div>
+
+        <div class="quickBtns">
+          <button onclick="setHit(50)">50</button>
+          <button onclick="setHit(100)">100</button>
+          <button onclick="setHit(150)">150</button>
+          <button onclick="setHit(200)">200</button>
+          <button onclick="setHit(300)">300</button>
+          <button onclick="setHit(400)">400</button>
+        </div>
+
+        <div class="hitSummaryLine">
+          <span class="hitCountBadge">BIG：<span id="hitBigCountPage">0</span>回</span>
+          <span class="hitCountBadge">REG：<span id="hitRegCountPage">0</span>回</span>
+          <span class="hitCountBadge">合計：<span id="hitTotalCountPage">0</span>回</span>
+        </div>
+
+        <div class="chips" id="hitChips"></div>
+      </div>
+    </section>
+
+    <section class="card hitOnlyCard" style="margin-top:12px">
+      <div class="graphHead" style="margin-bottom:8px">
+        <h2 class="hitOnlySectionTitle">ゾーン分析</h2>
+        <div class="actions noPrint">
+          <select id="hitType" onchange="renderHitAnalysis()" style="width:140px">
+            <option value="all">BIG＋REG</option>
+            <option value="big">BIGのみ</option>
+            <option value="reg">REGのみ</option>
+          </select>
+          <select id="hitBucket" onchange="renderHitAnalysis()" style="width:140px">
+            <option value="100">100回転ごと</option>
+            <option value="50">50回転ごと</option>
+            <option value="200">200回転ごと</option>
+          </select>
+        </div>
+      </div>
+      <div class="tableWrap">
+        <table style="min-width:520px">
+          <thead><tr><th>回転数</th><th>回数</th><th>割合</th><th>グラフ</th></tr></thead>
+          <tbody id="distBody"></tbody>
+        </table>
+      </div>
+      <div class="smallNote" id="hitNote"></div>
+    </section>
+
+    <section class="card hitOnlyCard" style="margin-top:12px">
+      <h2 class="hitOnlySectionTitle">日付ごとの一覧</h2>
+      <div class="hitRawScroll">
+        <div id="hitRawBody" class="dateGroupList"></div>
+      </div>
+    </section>
   </div>
 
   <div id="mainPage" class="appPage active">
@@ -681,7 +813,9 @@ tfoot td{
     </table>
   </div>
 
-  <section class="summaryBox">
+  <details class="collapseBox">
+    <summary>月間集計・累計集計</summary>
+    <section class="summaryBox">
     <div class="summaryRow">
       <div class="summaryTitle">月間集計（<span id="monthLabel"></span>）</div>
       <div>総投資枚数：<span id="mInvest"></span></div>
@@ -722,9 +856,12 @@ tfoot td{
       <div>RB確率：<span id="aRegProb"></span></div>
       <div>合算：<span id="aTotalProb"></span></div>
     </div>
-  </section>
+    </section>
+  </details>
 
-  <section class="card graphCard">
+  <details class="collapseBox">
+    <summary>差枚グラフ</summary>
+    <section class="card graphCard">
     <div class="graphHead">
       <div style="width:100%">
         <h2 style="margin:0 0 10px;text-align:center;font-size:24px;font-weight:950">差枚数グラフ</h2>
@@ -744,10 +881,13 @@ tfoot td{
       <span><span class="dot" style="background:#fb923c"></span>期待値</span>
       <span><span class="dot" style="background:#bdbdbd"></span>損益分岐ライン</span>
     </div>
-  </section>
+    </section>
+  </details>
 
-  <section class="card">
-    <h2 style="margin-top:0">エクスポート / バックアップ</h2>
+  <details class="collapseBox">
+    <summary>エクスポート / バックアップ</summary>
+    <section class="card">
+      <h2 style="margin-top:0">エクスポート / バックアップ</h2>
     <div class="formGrid" style="grid-template-columns:220px auto;align-items:end;margin-bottom:14px">
       <div>
         <label>1,000円あたりの貸し枚数</label>
@@ -769,92 +909,9 @@ tfoot td{
         <input type="checkbox" id="replaceMode" style="width:auto;min-height:auto">置換モード（この月を書き替え）
       </label>
     </div>
-  </section>
-  </div>
-
-  <div id="hitPage" class="appPage">
-    <section class="card">
-      <div class="graphHead">
-        <div>
-          <h2 style="margin:0 0 6px">当たり回転数ページ</h2>
-          <div class="sub">プレイ中のBIG/REG当たり回転数は、ここで入力・編集できます。収支ページとは別データとして保存されます。</div>
-        </div>
-        <button onclick="showPage('mainPage')">収支ページへ戻る</button>
-      </div>
-
-      <div class="hitPagePanel">
-        <div class="hitPageTop">
-          <div>
-            <label>日付</label>
-            <input type="date" id="hitPageDate" onchange="syncHitPageDateToMain()">
-          </div>
-          <div>
-            <label>当たった回転数</label>
-            <input type="number" id="hitGame" placeholder="例：87" onkeydown="if(event.key==='Enter'){event.preventDefault();addHit('big')}">
-          </div>
-          <div>
-            <label>メモ（任意）</label>
-            <input id="hitMemo" placeholder="例：527番台、朝一など">
-          </div>
-          <div class="actions" style="margin-top:0">
-            <button class="blue" onclick="addHit('big')">BIG追加</button>
-            <button class="orange" onclick="addHit('reg')">REG追加</button>
-            <button onclick="clearHits()">全消し</button>
-          </div>
-        </div>
-
-        <div class="quickBtns">
-          <button onclick="setHit(50)">50</button>
-          <button onclick="setHit(100)">100</button>
-          <button onclick="setHit(150)">150</button>
-          <button onclick="setHit(200)">200</button>
-          <button onclick="setHit(300)">300</button>
-          <button onclick="setHit(400)">400</button>
-        </div>
-
-        <div class="hitSummaryLine">
-          <span class="hitCountBadge">BIG：<span id="hitBigCountPage">0</span>回</span>
-          <span class="hitCountBadge">REG：<span id="hitRegCountPage">0</span>回</span>
-          <span class="hitCountBadge">合計：<span id="hitTotalCountPage">0</span>回</span>
-        </div>
-
-        <div class="chips" id="hitChips"></div>
-        <div class="smallNote">当たり回転数が多くなっても、このページ内で日付ごとに確認できます。収支データとは別保存です。</div>
-      </div>
     </section>
-
-  <section class="card">
-    <div class="graphHead">
-      <div>
-        <h2 style="margin:0 0 6px">当たり回転数 分析</h2>
-        <div class="sub">BIG/REG別に、1〜100・101〜200のようなゾーン別割合を確認できます。</div>
-      </div>
-      <div class="actions noPrint">
-        <select id="hitType" onchange="renderHitAnalysis()" style="width:140px">
-          <option value="all">BIG＋REG</option>
-          <option value="big">BIGのみ</option>
-          <option value="reg">REGのみ</option>
-        </select>
-        <select id="hitBucket" onchange="renderHitAnalysis()" style="width:140px">
-          <option value="100">100回転ごと</option>
-          <option value="50">50回転ごと</option>
-          <option value="200">200回転ごと</option>
-        </select>
-      </div>
-    </div>
-    <div class="distGrid">
-      <div class="tableWrap">
-        <table style="min-width:520px">
-          <thead><tr><th>回転数</th><th>回数</th><th>割合</th><th>グラフ</th></tr></thead>
-          <tbody id="distBody"></tbody>
-        </table>
-      </div>
-      <div class="hitRawScroll">
-        <div id="hitRawBody" class="dateGroupList"></div>
-      </div>
-    </div>
-    <div class="smallNote" id="hitNote"></div>
-  </section>
+  </details>
+  </div>
 
 
   </div>
@@ -1088,7 +1145,7 @@ function addHit(type){
   if(type!=='big'&&type!=='reg')type='big';
 
   const date=document.getElementById('hitPageDate')?.value || today();
-  const memo=document.getElementById('hitMemo')?.value.trim() || '';
+  const memo='';
   hitRecords.push({
     id:'hit-'+Date.now()+'-'+Math.random().toString(16).slice(2),
     date,
@@ -1364,7 +1421,7 @@ function renderHitAnalysis(){
   if(!total){
     body.innerHTML='<tr><td colspan="4">当たり回転数の記録がありません。</td></tr>';
     raw.innerHTML='<div class="smallNote">当たり回転数の記録がありません。</div>';
-    setText('hitNote',`${targetMonth} の当たり回転数はまだありません。収支データとは別保存です。`);
+    setText('hitNote',`${targetMonth} の当たり回転数はまだありません。`);
     return;
   }
 
@@ -1391,19 +1448,18 @@ function renderHitAnalysis(){
     const bigN=items.filter(x=>x.type==='big').length;
     const regN=items.filter(x=>x.type==='reg').length;
     const chips=items.map(r=>`<span class="chip savedHitChip ${r.type==='big'?'big':'reg'}">${r.type==='big'?'BIG':'REG'} ${fmt(r.game)}G <button class="chipEdit" onclick="editHitRecord('${r.recordId}')">編集</button> <button onclick="deleteHitRecord('${r.recordId}')">×</button></span>`).join('');
-    const memo=items.find(x=>x.memo)?.memo||'';
     return `<details class="dateGroup" ${idx===0?'open':''}>
       <summary>
         <span>${date}</span>
         <span class="dateGroupMeta">BIG ${fmt(bigN)}回 / REG ${fmt(regN)}回 / 合計 ${fmt(items.length)}回</span>
       </summary>
-      <div class="dateGroupBody">${chips}${memo?`<div class="smallNote" style="width:100%">メモ：${escapeHtml(memo)}</div>`:''}</div>
+      <div class="dateGroupBody">${chips}</div>
     </details>`;
   }).join('');
 
   const u100=rows.filter(r=>r.game<=100).length;
   const u200=rows.filter(r=>r.game<=200).length;
-  setText('hitNote',`${targetMonth} / 100G以内：${fmt(u100)}回（${(u100/total*100).toFixed(1)}%） / 200G以内：${fmt(u200)}回（${(u200/total*100).toFixed(1)}%） ※収支データとは別保存`);
+  setText('hitNote',`${targetMonth} / 100G以内：${fmt(u100)}回（${(u100/total*100).toFixed(1)}%） / 200G以内：${fmt(u200)}回（${(u200/total*100).toFixed(1)}%）`);
 }
 
 function renderAll(){
