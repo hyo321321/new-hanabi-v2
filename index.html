@@ -181,6 +181,12 @@ label{
   gap:8px;
   flex-wrap:wrap;
   margin-top:10px;
+  max-height:170px;
+  overflow:auto;
+  padding:8px;
+  background:#fff;
+  border:1px solid #d1d5db;
+  border-radius:12px;
 }
 .chip{
   display:inline-flex;
@@ -323,9 +329,17 @@ tfoot td{
   color:#fff;
 }
 .graphCard .chartBox{
-  background:transparent;
-  min-height:360px;
-  padding:8px 0 0;
+  background:rgba(0,0,0,.10);
+  min-height:460px;
+  padding:12px 8px 0;
+  overflow-x:auto;
+  overflow-y:hidden;
+  border-radius:12px;
+}
+.graphCard svg{
+  display:block;
+  width:100%;
+  height:auto;
 }
 .graphCard .legend{
   justify-content:center;
@@ -388,6 +402,125 @@ tfoot td{
   z-index:100;
 }
 .toast.show{opacity:1;transform:translateY(0)}
+
+.pageNav{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin:12px 0 4px;
+}
+.pageNav button.active{
+  background:#050505;
+  color:#fff;
+  border-color:#050505;
+}
+.appPage{display:none}
+.appPage.active{display:block}
+.hitPageTop{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:12px;
+  align-items:end;
+}
+.hitPagePanel{
+  background:#f9fafb;
+  border:2px solid #4b5563;
+  border-radius:16px;
+  padding:16px;
+  margin-bottom:16px;
+}
+.hitSummaryLine{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  margin-top:10px;
+  color:#374151;
+  font-weight:950;
+}
+.hitCountBadge{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  border:1px solid #d1d5db;
+  background:#fff;
+  border-radius:999px;
+  padding:5px 10px;
+}
+.hitRawScroll{
+  max-height:420px;
+  overflow:auto;
+}
+
+.dateGroupList{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.dateGroup{
+  border:2px solid #4b5563;
+  border-radius:14px;
+  background:#fff;
+  overflow:hidden;
+}
+.dateGroup summary{
+  cursor:pointer;
+  list-style:none;
+  padding:12px 14px;
+  background:#f8fafc;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  font-weight:950;
+}
+.dateGroup summary::-webkit-details-marker{display:none}
+.dateGroup summary::after{
+  content:"開く";
+  font-size:12px;
+  color:#374151;
+  border:1px solid #d1d5db;
+  border-radius:999px;
+  padding:3px 9px;
+  background:#fff;
+}
+.dateGroup[open] summary::after{content:"閉じる"}
+.dateGroupBody{
+  padding:10px 12px 12px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  max-height:180px;
+  overflow:auto;
+  border-top:1px solid #d1d5db;
+}
+.dateGroupMeta{
+  color:#6b7280;
+  font-size:12px;
+  font-weight:800;
+}
+
+
+.chip .chipEdit{
+  min-height:20px;
+  height:22px;
+  width:auto;
+  padding:0 7px;
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.15);
+  background:rgba(255,255,255,.85);
+  color:#111827;
+  font-size:11px;
+  font-weight:950;
+}
+.savedHitChip{
+  padding-right:6px;
+}
+
+@media(max-width:900px){
+  .hitPageTop{grid-template-columns:1fr}
+}
+
 @media(max-width:900px){
   .wrap{padding:14px 10px 28px}
   .header{display:block}
@@ -403,7 +536,7 @@ tfoot td{
 }
 @media print{
   body{background:white}
-  .monthBox,.actions,.backupGrid,.toggle,.linkBtn,.hitArea,.noPrint{display:none!important}
+  .monthBox,.actions,.backupGrid,.toggle,.linkBtn,.hitArea,.noPrint,.pageNav,#hitPage{display:none!important}
   .wrap{max-width:none;padding:0}
   .card,.summaryBox,.tableWrap{box-shadow:none;break-inside:avoid}
 }
@@ -414,7 +547,7 @@ tfoot td{
   <div class="header">
     <div>
       <h1>新ハナビ 収支フォーム</h1>
-      <div class="sub">入力→日別表→月間集計→差枚グラフ→BIG/REG別 当たり回転数分析。ローカル保存対応。</div>
+      <div class="sub">入力→日別表→月間集計→差枚グラフ。BIG/REG別の当たり回転数は専用ページで管理できます。</div>
     </div>
     <div class="monthBox">
       <input type="month" id="monthPicker" onchange="setMonthFromPicker()" style="width:160px">
@@ -424,6 +557,13 @@ tfoot td{
       <label class="fileBtn">CSV取込<input class="hidden" type="file" accept=".csv,text/csv" onchange="importCSV(event)"></label>
     </div>
   </div>
+
+  <div class="pageNav noPrint">
+    <button id="mainPageBtn" class="active" onclick="showPage('mainPage')">収支ページ</button>
+    <button id="hitPageBtn" onclick="showPage('hitPage')">当たり回転数ページ</button>
+  </div>
+
+  <div id="mainPage" class="appPage active">
 
   <section class="card">
     <div class="formGrid">
@@ -469,7 +609,7 @@ tfoot td{
       <div>プレビュー（自動計算）</div>
       <div>差枚：<span class="val" id="pvDiff">0</span></div>
       <div>現金換算：<span class="val" id="pvCashMedals">0枚</span></div>
-      <div>機械割：<span class="val" id="pvPayout">0.00%</span></div>
+      <div>機械割：<span class="val" id="pvPayout">0.0%</span></div>
       <div>BIG確率：<span class="val" id="pvBig">-</span></div>
       <div>REG確率：<span class="val" id="pvReg">-</span></div>
       <div></div>
@@ -479,23 +619,18 @@ tfoot td{
     </div>
 
     <div class="hitArea">
-      <label>プレイ中かんたん入力：当たり回転数</label>
-      <div class="hitInput">
-        <input type="number" id="hitGame" placeholder="例：87" onkeydown="if(event.key==='Enter'){event.preventDefault();addHit('big')}">
-        <button class="blue" onclick="addHit('big')">BIG追加</button>
-        <button class="orange" onclick="addHit('reg')">REG追加</button>
-        <button onclick="clearHits()">当たり全消し</button>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <label>当たり回転数</label>
+          <div class="smallNote">当たり回転数の入力・一覧・分析は、専用ページに分けました。</div>
+          <div class="hitSummaryLine">
+            <span class="hitCountBadge">BIG：<span id="hitBigCount">0</span>回</span>
+            <span class="hitCountBadge">REG：<span id="hitRegCount">0</span>回</span>
+            <span class="hitCountBadge">合計：<span id="hitTotalCount">0</span>回</span>
+          </div>
+        </div>
+        <button type="button" class="black" onclick="showPage('hitPage')">当たり回転数ページへ</button>
       </div>
-      <div class="quickBtns">
-        <button onclick="setHit(50)">50</button>
-        <button onclick="setHit(100)">100</button>
-        <button onclick="setHit(150)">150</button>
-        <button onclick="setHit(200)">200</button>
-        <button onclick="setHit(300)">300</button>
-        <button onclick="setHit(400)">400</button>
-      </div>
-      <div class="chips" id="hitChips"></div>
-      <div class="smallNote">当たった回転数を入力してBIG追加またはREG追加を押すと、BIG/REG回数も自動で増えます。</div>
     </div>
 
     <div class="actions" style="margin-top:16px">
@@ -588,6 +723,78 @@ tfoot td{
   </section>
 
   <section class="card">
+    <h2 style="margin-top:0">エクスポート / バックアップ</h2>
+    <div class="formGrid" style="grid-template-columns:220px auto;align-items:end;margin-bottom:14px">
+      <div>
+        <label>1,000円あたりの貸し枚数</label>
+        <input type="number" id="rateInput" value="46" oninput="saveSettings()">
+      </div>
+      <div class="smallNote">現金投資は円で入力し、差枚計算では 1,000円 = 46枚 で自動換算します。</div>
+    </div>
+    <div class="backupGrid">
+      <button onclick="exportText()">MND出力（1ファイル）</button>
+      <button onclick="exportDayText()">MND出力（日別 連続DL）</button>
+      <button onclick="exportSelectedText()">選択行をMND出力（1ファイル）</button>
+      <button onclick="backupMonth()">表示中の月をバックアップ(JSON)</button>
+      <label class="fileBtn">JSON読み込み<input class="hidden" type="file" accept="application/json" onchange="restoreJSON(event)"></label>
+      <button onclick="exportRawMonth()">今月の生データ出力</button>
+      <button onclick="backupAll()">全期間をバックアップ(JSON)</button>
+      <button class="red" onclick="deleteSelected()">選択行を削除</button>
+      <label style="display:flex;align-items:center;gap:6px;margin-left:auto">
+        <input type="checkbox" id="replaceMode" style="width:auto;min-height:auto">置換モード（この月を書き替え）
+      </label>
+    </div>
+  </section>
+  </div>
+
+  <div id="hitPage" class="appPage">
+    <section class="card">
+      <div class="graphHead">
+        <div>
+          <h2 style="margin:0 0 6px">当たり回転数ページ</h2>
+          <div class="sub">プレイ中のBIG/REG当たり回転数は、ここで入力・編集できます。入力した内容は収支ページの保存データに一緒に入ります。</div>
+        </div>
+        <button onclick="showPage('mainPage')">収支ページへ戻る</button>
+      </div>
+
+      <div class="hitPagePanel">
+        <div class="hitPageTop">
+          <div>
+            <label>日付</label>
+            <input type="date" id="hitPageDate" onchange="syncHitPageDateToMain()">
+          </div>
+          <div>
+            <label>当たった回転数</label>
+            <input type="number" id="hitGame" placeholder="例：87" onkeydown="if(event.key==='Enter'){event.preventDefault();addHit('big')}">
+          </div>
+          <div class="actions" style="margin-top:0">
+            <button class="blue" onclick="addHit('big')">BIG追加</button>
+            <button class="orange" onclick="addHit('reg')">REG追加</button>
+            <button onclick="clearHits()">全消し</button>
+          </div>
+        </div>
+
+        <div class="quickBtns">
+          <button onclick="setHit(50)">50</button>
+          <button onclick="setHit(100)">100</button>
+          <button onclick="setHit(150)">150</button>
+          <button onclick="setHit(200)">200</button>
+          <button onclick="setHit(300)">300</button>
+          <button onclick="setHit(400)">400</button>
+        </div>
+
+        <div class="hitSummaryLine">
+          <span class="hitCountBadge">BIG：<span id="hitBigCountPage">0</span>回</span>
+          <span class="hitCountBadge">REG：<span id="hitRegCountPage">0</span>回</span>
+          <span class="hitCountBadge">合計：<span id="hitTotalCountPage">0</span>回</span>
+        </div>
+
+        <div class="chips" id="hitChips"></div>
+        <div class="smallNote">当たり回転数が多くなっても、このページ内で確認できます。入力中の回転数は「編集」から修正できます。</div>
+      </div>
+    </section>
+
+  <section class="card">
     <div class="graphHead">
       <div>
         <h2 style="margin:0 0 6px">当たり回転数 分析</h2>
@@ -613,39 +820,16 @@ tfoot td{
           <tbody id="distBody"></tbody>
         </table>
       </div>
-      <div class="tableWrap">
-        <table style="min-width:520px">
-          <thead><tr><th>日付</th><th>種類</th><th>当たり回転数</th><th>メモ</th></tr></thead>
-          <tbody id="hitRawBody"></tbody>
-        </table>
+      <div class="hitRawScroll">
+        <div id="hitRawBody" class="dateGroupList"></div>
       </div>
     </div>
     <div class="smallNote" id="hitNote"></div>
   </section>
 
-  <section class="card">
-    <h2 style="margin-top:0">エクスポート / バックアップ</h2>
-    <div class="formGrid" style="grid-template-columns:220px auto;align-items:end;margin-bottom:14px">
-      <div>
-        <label>1,000円あたりの貸し枚数</label>
-        <input type="number" id="rateInput" value="46" oninput="saveSettings()">
-      </div>
-      <div class="smallNote">現金投資は円で入力し、差枚計算では 1,000円 = 46枚 で自動換算します。</div>
-    </div>
-    <div class="backupGrid">
-      <button onclick="exportText()">MND出力（1ファイル）</button>
-      <button onclick="exportDayText()">MND出力（日別 連続DL）</button>
-      <button onclick="exportSelectedText()">選択行をMND出力（1ファイル）</button>
-      <button onclick="backupMonth()">表示中の月をバックアップ(JSON)</button>
-      <label class="fileBtn">JSON読み込み<input class="hidden" type="file" accept="application/json" onchange="restoreJSON(event)"></label>
-      <button onclick="exportRawMonth()">今月の生データ出力</button>
-      <button onclick="backupAll()">全期間をバックアップ(JSON)</button>
-      <button class="red" onclick="deleteSelected()">選択行を削除</button>
-      <label style="display:flex;align-items:center;gap:6px;margin-left:auto">
-        <input type="checkbox" id="replaceMode" style="width:auto;min-height:auto">置換モード（この月を書き替え）
-      </label>
-    </div>
-  </section>
+
+  </div>
+
 </div>
 
 <div class="toast" id="toast">保存しました</div>
@@ -660,6 +844,30 @@ let currentMonth='';
 let graphMode='month';
 let settings={rate:46};
 
+
+function showPage(pageId){
+  document.querySelectorAll('.appPage').forEach(p=>p.classList.remove('active'));
+  const page=document.getElementById(pageId);
+  if(page)page.classList.add('active');
+  document.querySelectorAll('.pageNav button').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById(pageId+'Btn');
+  if(btn)btn.classList.add('active');
+  if(pageId==='hitPage'){
+    const hitDate=document.getElementById('hitPageDate');
+    if(hitDate)hitDate.value=document.getElementById('date').value||today();
+    renderHitChips();
+    renderHitAnalysis();
+    setTimeout(()=>window.scrollTo({top:0,behavior:'smooth'}),30);
+  }
+}
+function syncHitPageDateToMain(){
+  const hitDate=document.getElementById('hitPageDate');
+  if(hitDate && hitDate.value){
+    document.getElementById('date').value=hitDate.value;
+    updatePreview();
+  }
+}
+
 function today(){
   const d=new Date();
   return d.toISOString().slice(0,10);
@@ -670,8 +878,14 @@ function ymFromDate(date){
 function fmt(n){
   return Number(n||0).toLocaleString('ja-JP');
 }
+function fmtSigned(n){
+  n=Number(n)||0;
+  if(n>0)return '+'+fmt(n);
+  if(n<0)return '-'+fmt(Math.abs(n));
+  return '0';
+}
 function prob(g,n){
-  return g>0 && n>0 ? '1/'+(g/n).toFixed(2) : '-';
+  return g>0 && n>0 ? '1/'+(g/n).toFixed(1) : '-';
 }
 function saveSettings(){
   const v=Number(document.getElementById('rateInput')?.value)||46;
@@ -707,6 +921,7 @@ function load(){
   document.getElementById('monthPicker').value=currentMonth;
   updatePreview();
   renderAll();
+  showPage('mainPage');
 }
 function saveLocal(){localStorage.setItem(KEY,JSON.stringify(records))}
 function toast(msg){
@@ -726,10 +941,10 @@ function updatePreview(){
   const r=collect(false);
   const d=diffOf(r);
   const g=Number(r.games)||0;
-  setText('pvDiff',fmt(d));
+  setText('pvDiff',fmtSigned(d));
   setClass('pvDiff',cls(d));
   setText('pvCashMedals',fmt(cashToMedals(r.satsume))+'枚');
-  setText('pvPayout',g?payoutOf(r).toFixed(2)+'%':'0.00%');
+  setText('pvPayout',g?payoutOf(r).toFixed(1)+'%':'0.0%');
   setText('pvBig',prob(g,r.big));
   setText('pvReg',prob(g,r.reg));
   setText('pvTotal',prob(g,(Number(r.big)||0)+(Number(r.reg)||0)));
@@ -772,6 +987,7 @@ function saveRecord(){
 function resetForm(){
   editId='';
   document.getElementById('date').value=today();
+  const hitDate=document.getElementById('hitPageDate'); if(hitDate)hitDate.value=today();
   ['invest','returnMedals','games','big','reg','regMiss','satsume'].forEach(id=>document.getElementById(id).value=0);
   document.getElementById('memo').value='';
   currentHits={big:[],reg:[]};
@@ -783,6 +999,7 @@ function editRecord(id){
   if(!r)return;
   editId=id;
   document.getElementById('date').value=r.date||today();
+  const hitDate=document.getElementById('hitPageDate'); if(hitDate)hitDate.value=r.date||today();
   document.getElementById('invest').value=r.invest||0;
   document.getElementById('returnMedals').value=r.returnMedals||0;
   document.getElementById('games').value=r.games||0;
@@ -819,6 +1036,7 @@ function addHit(type){
   const v=Number(el.value)||0;
   if(v<=0){alert('当たった回転数を入力してください。');return}
   if(type!=='big'&&type!=='reg')type='big';
+  syncHitPageDateToMain();
   currentHits[type].push(v);
   if(type==='big')document.getElementById('big').value=(Number(document.getElementById('big').value)||0)+1;
   if(type==='reg')document.getElementById('reg').value=(Number(document.getElementById('reg').value)||0)+1;
@@ -834,6 +1052,19 @@ function removeHit(type,i){
   renderHitChips();
   updatePreview();
 }
+
+function editHit(type,i){
+  if(type!=='big'&&type!=='reg')return;
+  const oldVal=currentHits[type][i];
+  const input=prompt(`${type==='big'?'BIG':'REG'}の当たり回転数を編集`, oldVal);
+  if(input===null)return;
+  const v=Number(input);
+  if(!v || v<=0){alert('1以上の回転数を入力してください。');return;}
+  currentHits[type][i]=v;
+  renderHitChips();
+  updatePreview();
+}
+
 function clearHits(){
   if((currentHits.big.length+currentHits.reg.length)&&!confirm('当たり回転数を消しますか？'))return;
   currentHits={big:[],reg:[]};
@@ -844,10 +1075,18 @@ function clearHits(){
 }
 function renderHitChips(){
   const chips=[
-    ...currentHits.big.map((v,i)=>`<span class="chip big">BIG ${fmt(v)}G <button onclick="removeHit('big',${i})">×</button></span>`),
-    ...currentHits.reg.map((v,i)=>`<span class="chip reg">REG ${fmt(v)}G <button onclick="removeHit('reg',${i})">×</button></span>`)
+    ...currentHits.big.map((v,i)=>`<span class="chip big">BIG ${fmt(v)}G <button class="chipEdit" onclick="editHit('big',${i})">編集</button> <button onclick="removeHit('big',${i})">×</button></span>`),
+    ...currentHits.reg.map((v,i)=>`<span class="chip reg">REG ${fmt(v)}G <button class="chipEdit" onclick="editHit('reg',${i})">編集</button> <button onclick="removeHit('reg',${i})">×</button></span>`)
   ];
-  document.getElementById('hitChips').innerHTML=chips.join('')||'<span class="smallNote">まだ当たり回転数はありません。</span>';
+  const chipBox=document.getElementById('hitChips');
+  if(chipBox)chipBox.innerHTML=chips.join('')||'<span class="smallNote">まだ当たり回転数はありません。</span>';
+
+  const bigCount=currentHits.big.length;
+  const regCount=currentHits.reg.length;
+  const total=bigCount+regCount;
+  ['hitBigCount','hitBigCountPage'].forEach(id=>{const el=document.getElementById(id); if(el)el.textContent=fmt(bigCount);});
+  ['hitRegCount','hitRegCountPage'].forEach(id=>{const el=document.getElementById(id); if(el)el.textContent=fmt(regCount);});
+  ['hitTotalCount','hitTotalCountPage'].forEach(id=>{const el=document.getElementById(id); if(el)el.textContent=fmt(total);});
 }
 function sum(list){
   return list.reduce((a,r)=>{
@@ -872,14 +1111,14 @@ function renderTable(){
   body.innerHTML=list.map(r=>{
     const g=Number(r.games)||0;
     const d=diffOf(r);
-    const p=g?payoutOf(r).toFixed(2):'0.00';
+    const p=g?payoutOf(r).toFixed(1):'0.0';
     const h=normalizeHits(r.hits);
     return `<tr>
       <td><input type="checkbox" class="rowCheck" value="${r.id}"></td>
       <td>${r.date}</td>
       <td>${fmt(r.invest)}</td>
       <td>${fmt(r.returnMedals)}</td>
-      <td class="${cls(d)}">${fmt(d)}</td>
+      <td class="${cls(d)}">${fmtSigned(d)}</td>
       <td>${fmt(g)}</td>
       <td>${p}</td>
       <td>${fmt(r.big)}</td>
@@ -895,8 +1134,8 @@ function renderTable(){
   }).join('')||'<tr><td colspan="16">この月の記録はありません。</td></tr>';
   const s=sum(list);
   document.getElementById('recordFoot').innerHTML=`<tr>
-    <td></td><td>合計</td><td>${fmt(s.medalInvest)}</td><td>${fmt(s.returnMedals)}</td><td class="${cls(s.diff)}">${fmt(s.diff)}</td><td>${fmt(s.games)}</td>
-    <td>${s.games?((s.games*3+s.diff)/(s.games*3)*100).toFixed(2):'0.00'}</td>
+    <td></td><td>合計</td><td>${fmt(s.medalInvest)}</td><td>${fmt(s.returnMedals)}</td><td class="${cls(s.diff)}">${fmtSigned(s.diff)}</td><td>${fmt(s.games)}</td>
+    <td>${s.games?((s.games*3+s.diff)/(s.games*3)*100).toFixed(1):'0.0'}</td>
     <td>${fmt(s.big)}</td><td>${fmt(s.reg)}</td><td>${prob(s.games,s.big)}</td><td>${prob(s.games,s.reg)}</td><td>${prob(s.games,s.big+s.reg)}</td>
     <td class="warn">${fmt(s.miss)}</td><td class="warn">${fmt(s.satsume)}</td><td>${fmt(s.hits)}</td><td></td>
   </tr>`;
@@ -905,10 +1144,10 @@ function fillSummary(prefix,list){
   const s=sum(list);
   setText(prefix+'Invest',fmt(s.invest));
   setText(prefix+'Return',fmt(s.returnMedals));
-  setText(prefix+'Diff',fmt(s.diff));
+  setText(prefix+'Diff',fmtSigned(s.diff));
   document.getElementById(prefix+'Diff').className=cls(s.diff);
   setText(prefix+'Games',fmt(s.games));
-  setText(prefix+'Payout',s.games?((s.games*3+s.diff)/(s.games*3)*100).toFixed(2)+'%':'0.00%');
+  setText(prefix+'Payout',s.games?((s.games*3+s.diff)/(s.games*3)*100).toFixed(1)+'%':'0.0%');
   setText(prefix+'Big',fmt(s.big));
   setText(prefix+'Reg',fmt(s.reg));
   setText(prefix+'Miss',fmt(s.miss));
@@ -930,12 +1169,13 @@ function renderChart(){
   document.getElementById('graphMonthBtn').classList.toggle('active',graphMode==='month');
   document.getElementById('graphAllBtn').classList.toggle('active',graphMode==='all');
   const s=sum(list);
-  setText('graphDiff',fmt(s.diff));
+  setText('graphDiff',fmtSigned(s.diff));
   document.getElementById('graphDiff').className=(Number(s.diff)>=0?'graphDiffPositive':'graphDiffNegative');
   if(!list.length){
     box.innerHTML='<div class="smallNote" style="color:#e5e7eb">グラフ表示できる記録がありません。</div>';
     return;
   }
+
   let cum=0,cumG=0;
   const vals=[];
   list.forEach(r=>{
@@ -947,22 +1187,22 @@ function renderChart(){
       x:cumG,
       cum,
       date:r.date,
-      expected:Math.round(cumG*3*0.02),
-      breakEven:0
+      expected:Math.round(cumG*3*0.02)
     });
   });
   if(!vals.length){
     box.innerHTML='<div class="smallNote" style="color:#e5e7eb">G数が入力されていないため、グラフ表示できません。</div>';
     return;
   }
-  const w=Math.max(940, vals.length*62 + 120), h=390;
-  const left=72, right=22, top=26, bottom=92;
+
+  const w=1280, h=470;
+  const left=86, right=28, top=28, bottom=110;
   const maxG=vals[vals.length-1].x||1;
 
   let minVal=Math.min(0, ...vals.map(v=>Math.min(v.cum, v.expected)));
   let maxVal=Math.max(0, ...vals.map(v=>Math.max(v.cum, v.expected)));
   const spanRaw=maxVal-minVal || 1;
-  const padVal=Math.max(2000, Math.ceil(spanRaw*0.08/1000)*1000);
+  const padVal=Math.max(2000, Math.ceil(spanRaw*0.10/1000)*1000);
   minVal = Math.floor((minVal-padVal)/1000)*1000;
   maxVal = Math.ceil((maxVal+padVal)/1000)*1000;
   const span=maxVal-minVal || 1;
@@ -970,41 +1210,45 @@ function renderChart(){
   const x=g=>left+(g/maxG)*(w-left-right);
   const y=v=>h-bottom-((v-minVal)/span)*(h-top-bottom);
 
-  // horizontal grid values: 10 segments
-  const gridCount=10;
+  const plotBg = `<rect x="${left}" y="${top}" width="${w-left-right}" height="${h-top-bottom}" rx="8" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)"></rect>`;
+
+  const gridCount=8;
   const gridVals=[];
   for(let i=0;i<=gridCount;i++){
     gridVals.push(minVal + (span/gridCount)*i);
   }
-
-  const grids = gridVals.map((gv, idx)=>{
+  const yGrids = gridVals.map(gv=>{
     const yy=y(gv);
-    const color = Math.abs(gv) < 1 ? '#d1d5db' : '#3b82f6';
-    const opacity = Math.abs(gv) < 1 ? 0.8 : 0.45;
-    return `<line x1="${left}" y1="${yy}" x2="${w-right}" y2="${yy}" stroke="${color}" stroke-width="${Math.abs(gv) < 1 ? 2 : 1}" stroke-dasharray="2 4" opacity="${opacity}"></line>
-            <text x="${left-10}" y="${yy+4}" font-size="12" text-anchor="end" fill="#f3f4f6" font-weight="700">${gv < 0 ? '▲ ' + fmt(Math.abs(Math.round(gv))) : fmt(Math.round(gv))}</text>`;
+    const isZero=Math.abs(gv)<1;
+    return `<line x1="${left}" y1="${yy}" x2="${w-right}" y2="${yy}" stroke="${isZero?'#d1d5db':'#60a5fa'}" stroke-width="${isZero?2:1}" stroke-dasharray="${isZero?'':'3 5'}" opacity="${isZero?0.9:0.45}"></line>
+            <text x="${left-12}" y="${yy+5}" font-size="13" text-anchor="end" fill="#f3f4f6" font-weight="700">${gv < 0 ? '-' + fmt(Math.abs(Math.round(gv))) : (gv > 0 ? '+' + fmt(Math.round(gv)) : '0')}</text>`;
+  }).join('');
+
+  const xTickCount=10;
+  const xTicks=[];
+  for(let i=0;i<=xTickCount;i++){
+    xTicks.push(Math.round(maxG*i/xTickCount));
+  }
+  const xGrid = xTicks.map(g=>{
+    const xx=x(g);
+    return `<line x1="${xx}" y1="${top}" x2="${xx}" y2="${h-bottom}" stroke="rgba(255,255,255,0.10)" stroke-width="1"></line>
+            <text x="${xx}" y="${h-bottom+24}" font-size="13" fill="#f3f4f6" text-anchor="end" transform="rotate(-90 ${xx} ${h-bottom+24})">${fmt(g)}</text>`;
   }).join('');
 
   const lineCum = vals.map((v,i)=>`${i?'L':'M'}${x(v.x)},${y(v.cum)}`).join(' ');
   const lineExp = vals.map((v,i)=>`${i?'L':'M'}${x(v.x)},${y(v.expected)}`).join(' ');
   const lineZero = `M${left},${y(0)} L${w-right},${y(0)}`;
-
-  const points = vals.map(v=>`<circle cx="${x(v.x)}" cy="${y(v.cum)}" r="3" fill="#60a5fa"><title>${v.date} / ${fmt(v.x)}G / ${fmt(v.cum)}枚</title></circle>`).join('');
-
-  const labelStep=Math.max(1, Math.ceil(vals.length/18));
-  const xLabels = vals.map((v,i)=>{
-    if(i!==0 && i!==vals.length-1 && i%labelStep!==0) return '';
-    const xx=x(v.x);
-    return `<text x="${xx}" y="${h-bottom+18}" font-size="11" fill="#f3f4f6" text-anchor="end" transform="rotate(-90 ${xx} ${h-bottom+18})">${fmt(v.x)}</text>`;
-  }).join('');
+  const points = vals.map((v,i)=> i%4===0 || i===vals.length-1 ? `<circle cx="${x(v.x)}" cy="${y(v.cum)}" r="3.4" fill="#60a5fa"><title>${v.date} / ${fmt(v.x)}G / ${fmt(v.cum)}枚</title></circle>` : '').join('');
 
   box.innerHTML=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="差枚数グラフ">
-    ${grids}
+    ${plotBg}
+    ${yGrids}
+    ${xGrid}
     <path d="${lineZero}" fill="none" stroke="#bdbdbd" stroke-width="3" stroke-linecap="round"></path>
     <path d="${lineExp}" fill="none" stroke="#fb923c" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"></path>
     <path d="${lineCum}" fill="none" stroke="#60a5fa" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"></path>
     ${points}
-    ${xLabels}
+    <text x="${(left+w-right)/2}" y="${h-18}" font-size="13" fill="#f3f4f6" text-anchor="middle">累計回転数</text>
   </svg>`;
 }
 function renderHitAnalysis(){
@@ -1015,7 +1259,7 @@ function renderHitAnalysis(){
     const h=normalizeHits(r.hits);
     ['big','reg'].forEach(t=>{
       if(type!=='all'&&type!==t)return;
-      h[t].forEach(g=>rows.push({date:r.date,type:t,game:Number(g)||0,memo:r.memo||''}));
+      h[t].forEach((g,hitIndex)=>rows.push({recordId:r.id,hitIndex,date:r.date,type:t,game:Number(g)||0,memo:r.memo||''}));
     });
   });
   rows.sort((a,b)=>a.game-b.game);
@@ -1024,7 +1268,7 @@ function renderHitAnalysis(){
   const raw=document.getElementById('hitRawBody');
   if(!total){
     body.innerHTML='<tr><td colspan="4">当たり回転数の記録がありません。</td></tr>';
-    raw.innerHTML='<tr><td colspan="4">当たり回転数の記録がありません。</td></tr>';
+    raw.innerHTML='<div class="smallNote">当たり回転数の記録がありません。</div>';
     setText('hitNote','当たり回転数を入力して保存すると、ここに集計されます。');
     return;
   }
@@ -1040,11 +1284,48 @@ function renderHitAnalysis(){
     const pct=c.count/total*100;
     return `<tr><td>${fmt(c.start)}〜${fmt(c.end)}</td><td>${fmt(c.count)}</td><td>${pct.toFixed(1)}%</td><td><span class="bar" style="width:${Math.max(2,Math.round(c.count/top*100))}%"></span></td></tr>`
   }).join('');
-  raw.innerHTML=rows.map(r=>`<tr><td>${r.date}</td><td>${r.type==='big'?'BIG':'REG'}</td><td>${fmt(r.game)}G</td><td>${escapeHtml(r.memo)}</td></tr>`).join('');
+  const byDate={};
+  rows.forEach(r=>{
+    if(!byDate[r.date])byDate[r.date]=[];
+    byDate[r.date].push(r);
+  });
+  raw.innerHTML=Object.keys(byDate).sort().reverse().map((date,idx)=>{
+    const items=byDate[date].sort((a,b)=>a.game-b.game);
+    const bigN=items.filter(x=>x.type==='big').length;
+    const regN=items.filter(x=>x.type==='reg').length;
+    const chips=items.map(r=>`<span class="chip savedHitChip ${r.type==='big'?'big':'reg'}">${r.type==='big'?'BIG':'REG'} ${fmt(r.game)}G <button class="chipEdit" onclick="editSavedHit('${r.recordId}','${r.type}',${r.hitIndex})">編集</button></span>`).join('');
+    const memo=items.find(x=>x.memo)?.memo||'';
+    return `<details class="dateGroup" ${idx===0?'open':''}>
+      <summary>
+        <span>${date}</span>
+        <span class="dateGroupMeta">BIG ${fmt(bigN)}回 / REG ${fmt(regN)}回 / 合計 ${fmt(items.length)}回</span>
+      </summary>
+      <div class="dateGroupBody">${chips}${memo?`<div class="smallNote" style="width:100%">メモ：${escapeHtml(memo)}</div>`:''}</div>
+    </details>`;
+  }).join('');
   const u100=rows.filter(r=>r.game<=100).length;
   const u200=rows.filter(r=>r.game<=200).length;
   setText('hitNote',`100G以内：${fmt(u100)}回（${(u100/total*100).toFixed(1)}%） / 200G以内：${fmt(u200)}回（${(u200/total*100).toFixed(1)}%）`);
 }
+
+function editSavedHit(recordId,type,hitIndex){
+  const r=records.find(x=>x.id===recordId);
+  if(!r)return;
+  const h=normalizeHits(r.hits);
+  if(type!=='big'&&type!=='reg')return;
+  const oldVal=h[type][hitIndex];
+  const input=prompt(`${type==='big'?'BIG':'REG'}の当たり回転数を編集`, oldVal);
+  if(input===null)return;
+  const v=Number(input);
+  if(!v || v<=0){alert('1以上の回転数を入力してください。');return;}
+  h[type][hitIndex]=v;
+  r.hits=h;
+  r.updatedAt=new Date().toISOString();
+  saveLocal();
+  renderAll();
+  toast('当たり回転数を編集しました');
+}
+
 function renderAll(){
   renderTable();
   renderSummary();
@@ -1088,7 +1369,7 @@ function exportCSV(){
   list.forEach(r=>{
     const g=Number(r.games)||0,h=normalizeHits(r.hits);
     const row=[
-      r.date,r.invest,r.returnMedals,diffOf(r),g,g?payoutOf(r).toFixed(2):'0.00',r.big,r.reg,prob(g,r.big),prob(g,r.reg),prob(g,(Number(r.big)||0)+(Number(r.reg)||0)),r.regMiss,r.satsume,r.memo,
+      r.date,r.invest,r.returnMedals,diffOf(r),g,g?payoutOf(r).toFixed(1):'0.0',r.big,r.reg,prob(g,r.big),prob(g,r.reg),prob(g,(Number(r.big)||0)+(Number(r.reg)||0)),r.regMiss,r.satsume,r.memo,
       h.big.join('|'),h.reg.join('|')
     ].map(csvCell);
     lines.push(row.join(','));
@@ -1203,9 +1484,9 @@ function formatText(r){
     `持ちメダル投資：${fmt(r.invest)}枚`,
     `現金投資：${fmt(r.satsume)}円（${fmt(cashToMedals(r.satsume))}枚換算）`,
     `回収：${fmt(r.returnMedals)}枚`,
-    `差枚：${fmt(diffOf(r))}枚`,
+    `差枚：${fmtSigned(diffOf(r))}枚`,
     `G数：${fmt(g)}G`,
-    `機械割：${g?payoutOf(r).toFixed(2):'0.00'}%`,
+    `機械割：${g?payoutOf(r).toFixed(1):'0.0'}%`,
     `BIG：${r.big}（${prob(g,r.big)}）`,
     `REG：${r.reg}（${prob(g,r.reg)}）`,
     `合算：${prob(g,(Number(r.big)||0)+(Number(r.reg)||0))}`,
