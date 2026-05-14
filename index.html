@@ -122,7 +122,7 @@ button:active{transform:translateY(1px)}
 }
 .formGrid{
   display:grid;
-  grid-template-columns:1.3fr 1fr 1fr 1fr 1fr 1fr 1fr;
+  grid-template-columns:1.2fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
   gap:10px 12px;
   align-items:end;
 }
@@ -136,7 +136,7 @@ label{
 }
 .preview{
   display:grid;
-  grid-template-columns:repeat(5,1fr);
+  grid-template-columns:repeat(4,1fr);
   gap:18px;
   margin:18px 0 10px;
 }
@@ -596,6 +596,10 @@ tfoot td{
         <input type="number" id="regMiss" value="0" oninput="updatePreview()">
       </div>
       <div>
+        <label>氷取りこぼし回数</label>
+        <input type="number" id="iceMiss" value="0" oninput="updatePreview()">
+      </div>
+      <div>
         <label>現金投資（円）</label>
         <input type="number" id="satsume" value="0" oninput="updatePreview()">
       </div>
@@ -614,6 +618,10 @@ tfoot td{
       <div>REG確率：<span class="val" id="pvReg">-</span></div>
       <div></div>
       <div>合算確率：<span class="val" id="pvTotal">-</span></div>
+      <div>REG失敗欠損：<span class="val minus" id="pvMissLoss">0</span></div>
+      <div>氷こぼし欠損：<span class="val minus" id="pvIceLoss">0</span></div>
+      <div>欠損合計：<span class="val minus" id="pvTotalLoss">0</span></div>
+      <div>ミスなし差枚：<span class="val" id="pvNoMissDiff">0</span></div>
       <div>102%目安：<span class="val plus" id="pvExpected">0</span></div>
       <div>当たり入力：<span class="val" id="pvHits">0回</span></div>
     </div>
@@ -656,7 +664,12 @@ tfoot td{
           <th>BIG確率</th>
           <th>REG確率</th>
           <th>合算確率</th>
-          <th>Miss</th>
+          <th>REG Miss</th>
+          <th>REG欠損</th>
+          <th>氷こぼし</th>
+          <th>氷欠損</th>
+          <th>欠損合計</th>
+          <th>ミスなし差枚</th>
           <th>現金投資（円）</th>
           <th>当たり</th>
           <th>操作</th>
@@ -678,6 +691,11 @@ tfoot td{
       <div>BIG合計：<span id="mBig"></span></div>
       <div>REG合計：<span id="mReg"></span></div>
       <div>REG失敗合計：<span id="mMiss"></span></div>
+      <div>REG失敗欠損：<span id="mMissLoss"></span></div>
+      <div>氷取りこぼし合計：<span id="mIceMiss"></span></div>
+      <div>氷こぼし欠損：<span id="mIceLoss"></span></div>
+      <div>欠損合計：<span id="mTotalLoss"></span></div>
+      <div>ミスなし差枚：<span id="mNoMissDiff"></span></div>
       <div>現金投資合計：<span id="mSatsume"></span></div>
       <div>BB確率：<span id="mBigProb"></span></div>
       <div>RB確率：<span id="mRegProb"></span></div>
@@ -693,6 +711,11 @@ tfoot td{
       <div>BIG合計：<span id="aBig"></span></div>
       <div>REG合計：<span id="aReg"></span></div>
       <div>REG失敗合計：<span id="aMiss"></span></div>
+      <div>REG失敗欠損：<span id="aMissLoss"></span></div>
+      <div>氷取りこぼし合計：<span id="aIceMiss"></span></div>
+      <div>氷こぼし欠損：<span id="aIceLoss"></span></div>
+      <div>欠損合計：<span id="aTotalLoss"></span></div>
+      <div>ミスなし差枚：<span id="aNoMissDiff"></span></div>
       <div>現金投資合計：<span id="aSatsume"></span></div>
       <div>BB確率：<span id="aBigProb"></span></div>
       <div>RB確率：<span id="aRegProb"></span></div>
@@ -901,6 +924,10 @@ function totalInvestMedalsOf(r){
   return (Number(r.invest)||0)+cashToMedals(r.satsume);
 }
 function diffOf(r){return (Number(r.returnMedals)||0)-totalInvestMedalsOf(r)}
+function missLossOf(r){return -10*(Number(r.regMiss)||0)}
+function iceLossOf(r){return -8*(Number(r.iceMiss)||0)}
+function totalLossOf(r){return missLossOf(r)+iceLossOf(r)}
+function noMissDiffOf(r){return diffOf(r)-totalLossOf(r)}
 function payoutOf(r){
   const g=Number(r.games)||0;
   if(!g)return 0;
@@ -948,6 +975,11 @@ function updatePreview(){
   setText('pvBig',prob(g,r.big));
   setText('pvReg',prob(g,r.reg));
   setText('pvTotal',prob(g,(Number(r.big)||0)+(Number(r.reg)||0)));
+  setText('pvMissLoss',fmtSigned(missLossOf(r)));
+  setText('pvIceLoss',fmtSigned(iceLossOf(r)));
+  setText('pvTotalLoss',fmtSigned(totalLossOf(r)));
+  setText('pvNoMissDiff',fmtSigned(noMissDiffOf(r)));
+  document.getElementById('pvNoMissDiff').className='val '+cls(noMissDiffOf(r));
   setText('pvExpected',fmt(Math.round(g*3*0.02)));
   setText('pvHits',fmt(currentHits.big.length+currentHits.reg.length)+'回');
 }
@@ -963,6 +995,7 @@ function collect(withId=true){
     big:Number(document.getElementById('big').value)||0,
     reg:Number(document.getElementById('reg').value)||0,
     regMiss:Number(document.getElementById('regMiss').value)||0,
+    iceMiss:Number(document.getElementById('iceMiss').value)||0,
     satsume:Number(document.getElementById('satsume').value)||0,
     memo:document.getElementById('memo').value.trim(),
     hits:{big:[...currentHits.big],reg:[...currentHits.reg]},
@@ -988,7 +1021,7 @@ function resetForm(){
   editId='';
   document.getElementById('date').value=today();
   const hitDate=document.getElementById('hitPageDate'); if(hitDate)hitDate.value=today();
-  ['invest','returnMedals','games','big','reg','regMiss','satsume'].forEach(id=>document.getElementById(id).value=0);
+  ['invest','returnMedals','games','big','reg','regMiss','iceMiss','satsume'].forEach(id=>document.getElementById(id).value=0);
   document.getElementById('memo').value='';
   currentHits={big:[],reg:[]};
   renderHitChips();
@@ -1006,6 +1039,7 @@ function editRecord(id){
   document.getElementById('big').value=r.big||0;
   document.getElementById('reg').value=r.reg||0;
   document.getElementById('regMiss').value=r.regMiss||0;
+  document.getElementById('iceMiss').value=r.iceMiss||0;
   document.getElementById('satsume').value=r.satsume||0;
   document.getElementById('memo').value=r.memo||'';
   currentHits=normalizeHits(r.hits);
@@ -1095,6 +1129,11 @@ function sum(list){
     a.medalInvest+=(Number(r.invest)||0);
     a.returnMedals+=Number(r.returnMedals)||0;
     a.diff+=diffOf(r);
+    a.missLoss+=missLossOf(r);
+    a.iceMiss+=Number(r.iceMiss)||0;
+    a.iceLoss+=iceLossOf(r);
+    a.totalLoss+=totalLossOf(r);
+    a.noMissDiff+=noMissDiffOf(r);
     a.games+=Number(r.games)||0;
     a.big+=Number(r.big)||0;
     a.reg+=Number(r.reg)||0;
@@ -1103,7 +1142,7 @@ function sum(list){
     const h=normalizeHits(r.hits);
     a.hits+=h.big.length+h.reg.length;
     return a;
-  },{invest:0,medalInvest:0,cashYen:0,returnMedals:0,diff:0,games:0,big:0,reg:0,miss:0,satsume:0,hits:0});
+  },{invest:0,medalInvest:0,cashYen:0,returnMedals:0,diff:0,missLoss:0,iceMiss:0,iceLoss:0,totalLoss:0,noMissDiff:0,games:0,big:0,reg:0,miss:0,satsume:0,hits:0});
 }
 function renderTable(){
   const list=selectedMonthRecords();
@@ -1127,17 +1166,22 @@ function renderTable(){
       <td>${prob(g,r.reg)}</td>
       <td>${prob(g,(Number(r.big)||0)+(Number(r.reg)||0))}</td>
       <td class="${r.regMiss>0?'warn':''}">${fmt(r.regMiss)}</td>
+      <td class="${r.regMiss>0?'warn':''}">${fmtSigned(missLossOf(r))}</td>
+      <td class="${r.iceMiss>0?'warn':''}">${fmt(r.iceMiss||0)}</td>
+      <td class="${r.iceMiss>0?'warn':''}">${fmtSigned(iceLossOf(r))}</td>
+      <td class="${(totalLossOf(r)<0)?'warn':''}">${fmtSigned(totalLossOf(r))}</td>
+      <td class="${cls(noMissDiffOf(r))}">${fmtSigned(noMissDiffOf(r))}</td>
       <td class="${r.satsume>0?'warn':''}">${fmt(r.satsume)}</td>
       <td>${fmt(h.big.length+h.reg.length)}</td>
       <td><button class="linkBtn edit" onclick="editRecord('${r.id}')">編集</button> <button class="linkBtn del" onclick="deleteRecord('${r.id}')">削除</button></td>
     </tr>`
-  }).join('')||'<tr><td colspan="16">この月の記録はありません。</td></tr>';
+  }).join('')||'<tr><td colspan="21">この月の記録はありません。</td></tr>';
   const s=sum(list);
   document.getElementById('recordFoot').innerHTML=`<tr>
     <td></td><td>合計</td><td>${fmt(s.medalInvest)}</td><td>${fmt(s.returnMedals)}</td><td class="${cls(s.diff)}">${fmtSigned(s.diff)}</td><td>${fmt(s.games)}</td>
     <td>${s.games?((s.games*3+s.diff)/(s.games*3)*100).toFixed(1):'0.0'}</td>
     <td>${fmt(s.big)}</td><td>${fmt(s.reg)}</td><td>${prob(s.games,s.big)}</td><td>${prob(s.games,s.reg)}</td><td>${prob(s.games,s.big+s.reg)}</td>
-    <td class="warn">${fmt(s.miss)}</td><td class="warn">${fmt(s.satsume)}</td><td>${fmt(s.hits)}</td><td></td>
+    <td class="warn">${fmt(s.miss)}</td><td class="warn">${fmtSigned(s.missLoss)}</td><td class="warn">${fmt(s.iceMiss)}</td><td class="warn">${fmtSigned(s.iceLoss)}</td><td class="warn">${fmtSigned(s.totalLoss)}</td><td class="${cls(s.noMissDiff)}">${fmtSigned(s.noMissDiff)}</td><td class="warn">${fmt(s.satsume)}</td><td>${fmt(s.hits)}</td><td></td>
   </tr>`;
 }
 function fillSummary(prefix,list){
@@ -1151,6 +1195,15 @@ function fillSummary(prefix,list){
   setText(prefix+'Big',fmt(s.big));
   setText(prefix+'Reg',fmt(s.reg));
   setText(prefix+'Miss',fmt(s.miss));
+  setText(prefix+'MissLoss',fmtSigned(s.missLoss));
+  document.getElementById(prefix+'MissLoss').className='warn';
+  setText(prefix+'IceMiss',fmt(s.iceMiss));
+  setText(prefix+'IceLoss',fmtSigned(s.iceLoss));
+  document.getElementById(prefix+'IceLoss').className='warn';
+  setText(prefix+'TotalLoss',fmtSigned(s.totalLoss));
+  document.getElementById(prefix+'TotalLoss').className='warn';
+  setText(prefix+'NoMissDiff',fmtSigned(s.noMissDiff));
+  document.getElementById(prefix+'NoMissDiff').className=cls(s.noMissDiff);
   setText(prefix+'Satsume',fmt(s.satsume)+'円');
   setText(prefix+'BigProb',prob(s.games,s.big));
   setText(prefix+'RegProb',prob(s.games,s.reg));
@@ -1366,12 +1419,12 @@ function deleteSelected(){
 }
 function exportCSV(){
   const list=selectedMonthRecords();
-  const header=['date','medalInvest','returnMedals','diff','games','payout','big','reg','bigProb','regProb','totalProb','regMiss','cashYen','memo','bigHits','regHits'];
+  const header=['date','medalInvest','returnMedals','diff','regMissLoss','iceLoss','totalLoss','noMissDiff','games','payout','big','reg','bigProb','regProb','totalProb','regMiss','iceMiss','cashYen','memo','bigHits','regHits'];
   const lines=[header.join(',')];
   list.forEach(r=>{
     const g=Number(r.games)||0,h=normalizeHits(r.hits);
     const row=[
-      r.date,r.invest,r.returnMedals,diffOf(r),g,g?payoutOf(r).toFixed(1):'0.0',r.big,r.reg,prob(g,r.big),prob(g,r.reg),prob(g,(Number(r.big)||0)+(Number(r.reg)||0)),r.regMiss,r.satsume,r.memo,
+      r.date,r.invest,r.returnMedals,diffOf(r),missLossOf(r),iceLossOf(r),totalLossOf(r),noMissDiffOf(r),g,g?payoutOf(r).toFixed(1):'0.0',r.big,r.reg,prob(g,r.big),prob(g,r.reg),prob(g,(Number(r.big)||0)+(Number(r.reg)||0)),r.regMiss,r.iceMiss||0,r.satsume,r.memo,
       h.big.join('|'),h.reg.join('|')
     ].map(csvCell);
     lines.push(row.join(','));
@@ -1398,13 +1451,14 @@ function importCSV(e){
         date:cols[0]||today(),
         invest:Number(cols[1])||0,
         returnMedals:Number(cols[2])||0,
-        games:Number(cols[4])||0,
-        big:Number(cols[6])||0,
-        reg:Number(cols[7])||0,
-        regMiss:Number(cols[11])||0,
-        satsume:Number(cols[12])||0,
-        memo:cols[13]||'',
-        hits:{big:(cols[14]||'').split('|').filter(Boolean).map(Number),reg:(cols[15]||'').split('|').filter(Boolean).map(Number)},
+        games:Number(cols[8]||cols[6]||cols[4])||0,
+        big:Number(cols[10]||cols[8]||cols[6])||0,
+        reg:Number(cols[11]||cols[9]||cols[7])||0,
+        regMiss:Number(cols[15]||cols[13]||cols[11])||0,
+        iceMiss:Number(cols[16]||0)||0,
+        satsume:Number(cols[17]||cols[14]||cols[12])||0,
+        memo:cols[18]||cols[15]||cols[13]||'',
+        hits:{big:(cols[19]||cols[16]||cols[14]||'').split('|').filter(Boolean).map(Number),reg:(cols[20]||cols[17]||cols[15]||'').split('|').filter(Boolean).map(Number)},
         createdAt:new Date().toISOString()
       });
     });
@@ -1492,7 +1546,12 @@ function formatText(r){
     `BIG：${r.big}（${prob(g,r.big)}）`,
     `REG：${r.reg}（${prob(g,r.reg)}）`,
     `合算：${prob(g,(Number(r.big)||0)+(Number(r.reg)||0))}`,
-    `REG中失敗：${r.regMiss}`,
+    `REG中失敗：${r.regMiss}回`,
+    `REG失敗欠損：${fmtSigned(missLossOf(r))}枚`,
+    `氷取りこぼし：${r.iceMiss||0}回`,
+    `氷こぼし欠損：${fmtSigned(iceLossOf(r))}枚`,
+    `欠損合計：${fmtSigned(totalLossOf(r))}枚`,
+    `ミスなし差枚：${fmtSigned(noMissDiffOf(r))}枚`,
     `現金投資：${fmt(r.satsume)}円（${fmt(cashToMedals(r.satsume))}枚換算）`,
     `BIG当たり回転数：${h.big.join(', ')||'-'}`,
     `REG当たり回転数：${h.reg.join(', ')||'-'}`,
@@ -1515,6 +1574,7 @@ function fillSample(){
   document.getElementById('big').value=11;
   document.getElementById('reg').value=9;
   document.getElementById('regMiss').value=2;
+  document.getElementById('iceMiss').value=1;
   document.getElementById('satsume').value=0;
   document.getElementById('memo').value='サンプル';
   currentHits={big:[74,106,232,516],reg:[138,280,430]};
