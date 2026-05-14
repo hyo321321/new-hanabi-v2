@@ -1229,14 +1229,15 @@ function renderChart(){
   for(let i=0;i<=xTickCount;i++){
     xTicks.push(Math.round(maxG*i/xTickCount));
   }
+  if(!xTicks.includes(0))xTicks.unshift(0);
   const xGrid = xTicks.map(g=>{
     const xx=x(g);
     return `<line x1="${xx}" y1="${top}" x2="${xx}" y2="${h-bottom}" stroke="rgba(255,255,255,0.10)" stroke-width="1"></line>
             <text x="${xx}" y="${h-bottom+24}" font-size="13" fill="#f3f4f6" text-anchor="end" transform="rotate(-90 ${xx} ${h-bottom+24})">${fmt(g)}</text>`;
   }).join('');
 
-  const lineCum = vals.map((v,i)=>`${i?'L':'M'}${x(v.x)},${y(v.cum)}`).join(' ');
-  const lineExp = vals.map((v,i)=>`${i?'L':'M'}${x(v.x)},${y(v.expected)}`).join(' ');
+  const lineCum = `M${x(0)},${y(0)} ` + vals.map(v=>`L${x(v.x)},${y(v.cum)}`).join(' ');
+  const lineExp = `M${x(0)},${y(0)} ` + vals.map(v=>`L${x(v.x)},${y(v.expected)}`).join(' ');
   const lineZero = `M${left},${y(0)} L${w-right},${y(0)}`;
   const points = vals.map((v,i)=> i%4===0 || i===vals.length-1 ? `<circle cx="${x(v.x)}" cy="${y(v.cum)}" r="3.4" fill="#60a5fa"><title>${v.date} / ${fmt(v.x)}G / ${fmt(v.cum)}枚</title></circle>` : '').join('');
 
@@ -1247,6 +1248,7 @@ function renderChart(){
     <path d="${lineZero}" fill="none" stroke="#bdbdbd" stroke-width="3" stroke-linecap="round"></path>
     <path d="${lineExp}" fill="none" stroke="#fb923c" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"></path>
     <path d="${lineCum}" fill="none" stroke="#60a5fa" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"></path>
+    <circle cx="${x(0)}" cy="${y(0)}" r="4" fill="#f3f4f6"><title>開始 0G / 0枚</title></circle>
     ${points}
     <text x="${(left+w-right)/2}" y="${h-18}" font-size="13" fill="#f3f4f6" text-anchor="middle">累計回転数</text>
   </svg>`;
