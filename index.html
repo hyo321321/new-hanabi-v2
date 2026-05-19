@@ -568,6 +568,12 @@ tfoot td{
   margin-top:10px;
 }
 
+
+#bulkHitText{
+  min-height:96px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+
 @media(max-width:900px){
   .hitOnlyInput{grid-template-columns:1fr}
 }
@@ -660,6 +666,28 @@ tfoot td{
 
         <div class="chips" id="hitChips"></div>
       </div>
+
+      <div class="hitPagePanel" style="margin-top:12px;margin-bottom:0">
+        <label>コピペで一括追加</label>
+        <textarea id="bulkHitText" placeholder="例：
+BIG 87
+REG 142
+BIG 203
+
+数字だけの場合：
+87
+142
+203"></textarea>
+        <div class="actions" style="margin-top:8px">
+          <select id="bulkDefaultType" style="width:180px">
+            <option value="big">数字だけはBIG</option>
+            <option value="reg">数字だけはREG</option>
+          </select>
+          <button class="black" onclick="bulkAddHits()">一括追加</button>
+          <button onclick="document.getElementById('bulkHitText').value=''">貼付欄クリア</button>
+        </div>
+        <div class="smallNote">1行に1件ずつ貼り付けできます。BIG / REG と書いてあれば自動判定します。数字だけの行は、選択した種類で追加します。</div>
+      </div>
     </section>
 
     <section class="card hitOnlyCard" style="margin-top:12px">
@@ -705,35 +733,35 @@ tfoot td{
       </div>
       <div>
         <label>持ちメダル投資（枚）</label>
-        <input type="number" id="invest" value="0" oninput="updatePreview()">
+        <input type="number" id="invest" placeholder="0" oninput="updatePreview()">
       </div>
       <div>
         <label>回収（枚）</label>
-        <input type="number" id="returnMedals" value="0" oninput="updatePreview()">
+        <input type="number" id="returnMedals" placeholder="0" oninput="updatePreview()">
       </div>
       <div>
         <label>G数</label>
-        <input type="number" id="games" value="0" oninput="updatePreview()">
+        <input type="number" id="games" placeholder="0" oninput="updatePreview()">
       </div>
       <div>
         <label>BIG</label>
-        <input type="number" id="big" value="0" oninput="updatePreview()">
+        <input type="number" id="big" placeholder="0" oninput="updatePreview()">
       </div>
       <div>
         <label>REG</label>
-        <input type="number" id="reg" value="0" oninput="updatePreview()">
+        <input type="number" id="reg" placeholder="0" oninput="updatePreview()">
       </div>
       <div>
         <label>REG中失敗回数</label>
-        <input type="number" id="regMiss" value="0" oninput="updatePreview()">
+        <input type="number" id="regMiss" placeholder="0" oninput="updatePreview()">
       </div>
       <div>
         <label>氷取りこぼし回数</label>
-        <input type="number" id="iceMiss" value="0" oninput="updatePreview()">
+        <input type="number" id="iceMiss" placeholder="0" oninput="updatePreview()">
       </div>
       <div>
         <label>現金投資（円）</label>
-        <input type="number" id="satsume" value="0" oninput="updatePreview()">
+        <input type="number" id="satsume" placeholder="0" oninput="updatePreview()">
       </div>
       <div class="wide2">
         <label>店名・台番メモ</label>
@@ -1084,7 +1112,7 @@ function resetForm(){
   editId='';
   document.getElementById('date').value=today();
   const hitDate=document.getElementById('hitPageDate'); if(hitDate)hitDate.value=today();
-  ['invest','returnMedals','games','big','reg','regMiss','iceMiss','satsume'].forEach(id=>document.getElementById(id).value=0);
+  ['invest','returnMedals','games','big','reg','regMiss','iceMiss','satsume'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('memo').value='';
   renderHitChips();
   updatePreview();
@@ -1161,6 +1189,55 @@ function addHit(type){
   updatePreview();
   toast(`${type==='big'?'BIG':'REG'} ${fmt(v)}G を保存しました`);
 }
+
+function bulkAddHits(){
+  const text=(document.getElementById('bulkHitText')?.value||'').trim();
+  if(!text){alert('貼り付け欄に当たり回転数を入力してください。');return;}
+  const date=document.getElementById('hitPageDate')?.value || today();
+  const defaultType=document.getElementById('bulkDefaultType')?.value || 'big';
+
+  const parts=text
+    .split(/\n|,|、|;/)
+    .map(s=>s.trim())
+    .filter(Boolean);
+
+  let added=0;
+  parts.forEach(part=>{
+    let type=defaultType;
+    const upper=part.toUpperCase();
+
+    if(upper.includes('BIG') || upper.includes('BB') || /^B[\s:：-]*/.test(upper)){
+      type='big';
+    }else if(upper.includes('REG') || upper.includes('RB') || /^R[\s:：-]*/.test(upper)){
+      type='reg';
+    }
+
+    const nums=part.match(/\d+/g)||[];
+    nums.forEach(num=>{
+      const game=Number(num);
+      if(game>0){
+        hitRecords.push({
+          id:'hit-'+Date.now()+'-'+Math.random().toString(16).slice(2),
+          date,
+          type,
+          game,
+          memo:'',
+          createdAt:new Date().toISOString()
+        });
+        added++;
+      }
+    });
+  });
+
+  if(!added){alert('追加できる回転数が見つかりませんでした。');return;}
+  saveHitLocal();
+  document.getElementById('bulkHitText').value='';
+  renderHitChips();
+  renderHitAnalysis();
+  updatePreview();
+  toast(`${added}件の当たり回転数を追加しました`);
+}
+
 function deleteHitRecord(id){
   if(!confirm('この当たり回転数を削除しますか？'))return;
   hitRecords=hitRecords.filter(h=>h.id!==id);
